@@ -1,6 +1,13 @@
-Debox is a Scala library designed to provide simple collections
-which do not box.
+Debox is a Scala library providing simple collections which do not box.
 
-It is not intended to replace Scala's built-in collections but
-to complement them in cases where performance is more important
-than genericness.
+It is not intended to replace Scala's built-in collections but to complement
+them in cases where performance is more important than genericness. In
+particular, these collection classes do not extend any class, nor any trait
+that is not specialized. This means that they are not instances of Traversable,
+Seq, or any other standard Scala collection interface.
+
+Where possible, collections will provide a mutable and an immutable version.
+Since these classes are mostly array-based, the underlying array will always be
+mutable, but in the immutable version the array will not be shared or exposed.
+
+The code is available under the MIT license (found in the COPYING file).
