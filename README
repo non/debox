@@ -1,0 +1,6 @@
+Debox is a Scala library designed to provide simple collections
+which do not box.
+
+It is not intended to replace Scala's built-in collections but
+to complement them in cases where performance is more important
+than genericness.
