@@ -1,13 +1,41 @@
 package debox.set
 
 import debox.Unset
+import debox.buffer.Buffer
 
 import scala.{specialized => spec}
 
 object Set {
-  def empty[@spec A:Manifest:Unset]: Set[A] = Unset[A].get match {
-    case Some(a) => new MarkedSet(Array.fill(8)(a), 0, 8)
-    case None => new BitmaskSet(Array.ofDim[A](8), Array(0), 0, 8)
+  def empty[@spec A:Manifest:Unset]: Set[A] = ofDim[A](8)
+
+  def ofDim[@spec A:Manifest:Unset](n:Int): Set[A] = Unset[A].get match {
+    case Some(a) => new MarkedSet(Array.fill(n)(a), 0, (n + 31) / 32)
+    case None => new BitmaskSet(Array.ofDim[A](n), Array(0), 0, (n + 31) / 32)
+  }
+
+  def apply[@spec A:Manifest:Unset](): Set[A] = empty[A]
+
+  def apply[@spec A:Manifest:Unset](as:Array[A]) = {
+    val n = scala.math.min(as.length * 3 / 2, 8)
+    val s = ofDim[A](n)
+    var i = 0
+    val len = as.length
+    while (i < len) {
+      s.add(as(i))
+      i += 1
+    }
+    s
+  }
+
+  def apply[@spec A:Manifest:Unset](as:Buffer[A]) = {
+    val s = ofDim[A](as.length * 3 / 2)
+    var i = 0
+    val len = as.length
+    while (i < len) {
+      s.add(as(i))
+      i += 1
+    }
+    s
   }
 }
 
@@ -77,6 +105,7 @@ trait Set[@spec A] {
 }
 
 final class MarkedSet[@spec A](as:Array[A], n:Int, s:Int)(implicit val m:Manifest[A], val u:Unset[A]) extends Set[A] {
+  println("built marked set")
   var buckets:Array[A] = as // buckets to store things in
   var len:Int = n // number of buckets used
 
@@ -183,6 +212,7 @@ final class MarkedSet[@spec A](as:Array[A], n:Int, s:Int)(implicit val m:Manifes
 
 
 final class BitmaskSet[@spec A](as:Array[A], ps:Array[Int], n:Int, s:Int)(implicit val m:Manifest[A], val u:Unset[A]) extends Set[A] {
+  println("built bitmask set")
   var buckets:Array[A] = as // buckets to store things in
   var present:Array[Int] = ps // keep track of which buckets are used
   var len:Int = n // number of buckets used
