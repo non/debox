@@ -22,4 +22,8 @@ To run the benchmarks, simply do the following in SBT:
     [info] Set current project to benchmark (in build file:/home/erik/debox/)
     > run
 
+Buffer is relatively well-tested. Other parts are very much a work-in-progress.
+Criticisms, suggestions and patches are all welcome, as are benchmarking
+numbers (especially surprsing ones)! 
+
 The code is available under the MIT license (found in the COPYING file).
