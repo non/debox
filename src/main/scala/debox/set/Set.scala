@@ -1,6 +1,6 @@
 package debox.set
 
-import debox.Unset
+import debox._
 import debox.buffer.Buffer
 
 import scala.{specialized => spec}
@@ -8,9 +8,14 @@ import scala.{specialized => spec}
 object Set {
   def empty[@spec A:Manifest:Unset]: Set[A] = ofDim[A](8)
 
-  def ofDim[@spec A:Manifest:Unset](n:Int): Set[A] = Unset[A].get match {
-    case Some(a) => new MarkedSet(Array.fill(n)(a), 0, (n + 31) / 32)
-    case None => new BitmaskSet(Array.ofDim[A](n), Array(0), 0, (n + 31) / 32)
+  def ofDim[@spec A](n:Int)(implicit m:Manifest[A], u:Unset[A]): Set[A] = {
+    if (n > 1073741824) sys.error("invalid size: %s" format n)
+    var i = 8
+    while (i < n) i << 1
+    u match {
+      case mu @ MarkedUnset(a) => new MarkedSet(Array.fill(n)(a), 0, (n + 31) >> 5)(m, mu)
+      case nu => new BitmaskSet(Array.ofDim[A](n), Array(0), 0, (n + 31) >> 5)(m, nu)
+    }
   }
 
   def apply[@spec A:Manifest:Unset](): Set[A] = empty[A]
@@ -100,59 +105,49 @@ trait Set[@spec A] {
   def map[@spec B:Manifest:Unset](f:A => B): Set[B]
 
   def foreach(f:Function[A, Unit]): Unit
-
-  def iterate(f:Function[Int, Unit]): Unit
 }
 
-final class MarkedSet[@spec A](as:Array[A], n:Int, s:Int)(implicit val m:Manifest[A], val u:Unset[A]) extends Set[A] {
-  println("built marked set")
+final class MarkedSet[@spec A](as:Array[A], n:Int, s:Int)(implicit val m:Manifest[A], val u:MarkedUnset[A]) extends Set[A] {
   var buckets:Array[A] = as // buckets to store things in
   var len:Int = n // number of buckets used
+  final val nul = u.nul
 
-  def length = len
-
-  def apply(item:A): Boolean = hasItemAt(item, hash(item, mask, buckets))
-
-  def hasItemAt(item:A, i:Int): Boolean = item == buckets(i)
+  @inline final def length = len
+  @inline final def apply(item:A): Boolean = hasItemAt(item, hash(item, mask, buckets))
+  final def hasItemAt(item:A, i:Int): Boolean = item == buckets(i)
+  final def notItemAt(item:A, i:Int): Boolean = item != buckets(i)
 
   def add(item:A): Boolean = {
     val i = hash(item, mask, buckets)
-    if (hasItemAt(item, i)) {
-      false
-    } else {
-      buckets(i) = item
-      len += 1
-      if (len > limit) resize()
-      true
-    }
+    if (hasItemAt(item, i)) return false
+    buckets(i) = item
+    len += 1
+    if (len > limit) resize()
+    true
   }
 
   def remove(item:A): Boolean = {
     val i = hash(item, mask, buckets)
-    if (hasItemAt(item, i)) {
-      buckets(i) = null.asInstanceOf[A]
-      len -= 1
-      // TODO: maybe we want to shrink the underlying arrays in some cases
-      true
-    } else {
-      false
-    }
+    if (notItemAt(item, i)) return false
+    buckets(i) = nul
+    len -= 1
+    // TODO: maybe shrink the underlying array?
+    true
   }
 
   def copy:Set[A] = new MarkedSet(buckets.clone, len, size)
 
   def map[@spec B:Manifest:Unset](f:A => B): Set[B] = {
+    implicit val mu = MarkedUnset(f(nul))
     val set = new MarkedSet(Array.ofDim[B](size), 0, size)
     foreach(a => set.add(f(a)))
     set
   }
 
-  def foreach(f:Function[A, Unit]): Unit = iterate(i => f(buckets(i)))
-
-  def iterate(f:Function[Int, Unit]): Unit = {
+  def foreach(f:Function[A, Unit]): Unit = {
     var i = 0
-    while (i < length) {
-      if (buckets(i) != null) f(i)
+    while (i < len) {
+      if (buckets(i) != nul) f(buckets(i))
       i += 1
     }
   }
@@ -163,31 +158,28 @@ final class MarkedSet[@spec A](as:Array[A], n:Int, s:Int)(implicit val m:Manifes
   var limit = (s * 0.65).toInt // point at which we should resize
 
   def hash(item:A, mask:Int, bs:Array[A]):Int = {
-    var i = item.hashCode // get a hash code for the item
-    var j = i & mask // ensure j is positive and within [0, size]
-    
-    // return if we have a vacant bucket, or our own bucket
-    if (bs(j) == null || bs(j) == item) return j
+    var i = item.hashCode & 0x7fffffff // positive hash code for the item
+    var perturbation = i // perturbation helps avoid collisions
     
     // while there are collisions, we have to keep modifying our index to find
     // new addresses. the open addressing scheme here is inspired by python's.
-    var perturbation = i
     while (true) {
+      // j is the index we're going to try
+      val j = i & mask
+
+      // if this index is empty
+      if (bs(j) == nul || bs(j) == item) return j
+
+      // otherwise, find a new index to try
       i = (i << 2) + i + perturbation + 1
-      j = i & mask
-    
-      // again, return if we have a vacant (or owned) bucket
-      if (bs(j) == null || bs(j) == item) return j
-    
       perturbation >>= 5
     }
     
     // should never happen
-    sys.error("should not happen")
     -1
   }
 
-  def resize() {
+  def resize():A = {
     val factor = if (size < 10000) 4 else 2
 
     val nextsize = size * factor
@@ -196,57 +188,61 @@ final class MarkedSet[@spec A](as:Array[A], n:Int, s:Int)(implicit val m:Manifes
 
     if (nextsize < 0) sys.error("oh no!")
 
-    foreach {
-      item =>
-      val i = hash(item, nextmask, nextbuckets)
-      nextbuckets(i) = item
+    var i = 0
+    while (i < len) {
+      val item = buckets(i)
+      if (item != nul) {
+        val j = hash(item, nextmask, nextbuckets)
+        nextbuckets(j) = item
+      }
+      i += 1
     }
 
     size = nextsize
     mask = nextmask
     buckets = nextbuckets
     limit = (size * 0.65).toInt
+
+    null.asInstanceOf[A]
   }
 }
 
 
 
 final class BitmaskSet[@spec A](as:Array[A], ps:Array[Int], n:Int, s:Int)(implicit val m:Manifest[A], val u:Unset[A]) extends Set[A] {
-  println("built bitmask set")
   var buckets:Array[A] = as // buckets to store things in
   var present:Array[Int] = ps // keep track of which buckets are used
   var len:Int = n // number of buckets used
 
-  def length = len
+  final val nul:A = null.asInstanceOf[A]
 
-  def apply(item:A): Boolean = hasItemAt(item, hash(item, mask, buckets, present))
+  @inline final def length = len
+  @inline final def apply(item:A): Boolean = hasItemAt(item, hash(item, mask, buckets, present))
+  final def hasItemAt(item:A, i:Int): Boolean = {
+    item == buckets(i) && (item != nul || occupied(present, i))
+  }
+  final def notItemAt(item:A, i:Int): Boolean = {
+    item != buckets(i) || (item == nul && vacant(present, i))
+  }
 
-  def hasItemAt(item:A, i:Int): Boolean = item == buckets(i) && occupied(present, i)
-
-  def add(item:A): Boolean = {
+  final def add(item:A): Boolean = {
     val i = hash(item, mask, buckets, present)
-    if (hasItemAt(item, i)) {
-      false
-    } else {
-      buckets(i) = item
-      present(i / 32) |= (1 << (i % 32))
-      len += 1
-      if (len > limit) resize()
-      true
-    }
+    if (hasItemAt(item, i)) return false
+    buckets(i) = item
+    present(i >> 5) |= (1 << (i & 31))
+    len += 1
+    if (len > limit) resize()
+    true
   }
 
   def remove(item:A): Boolean = {
     val i = hash(item, mask, buckets, present)
-    if (hasItemAt(item, i)) {
-      buckets(i) = null.asInstanceOf[A]
-      present(i / 32) &= ~(1 << (i % 32))
-      len -= 1
-      // TODO: maybe we want to shrink the underlying arrays in some cases
-      true
-    } else {
-      false
-    }
+    if (notItemAt(item, i)) return false
+    buckets(i) = nul
+    present(i >> 5) &= ~(1 << (i & 31))
+    len -= 1
+    // TODO: maybe shrink the underlying arrays?
+    true
   }
 
   def copy:Set[A] = new BitmaskSet(buckets.clone, present.clone, len, size)
@@ -257,34 +253,11 @@ final class BitmaskSet[@spec A](as:Array[A], ps:Array[Int], n:Int, s:Int)(implic
     set
   }
 
-  def foreach(f:Function[A, Unit]): Unit = iterate(i => f(buckets(i)))
-
-  def iterate(f:Function[Int, Unit]): Unit = {
+  def foreach(f:Function[A, Unit]): Unit = {
     var i = 0
-    var m = 0
-    var p = 0
-
-    // this is the main loop that will handle all but the last 0-31 slots.
-    val limit = size - 31
-    while (i < limit) {
-      p = present(i / 32)
-      m = 1
-      while (m != 0) {
-        if ((p & m) != 0) f(i)
-        m = m << 1
-        i += 1
-      }
-    }
-
-    // if length is not a multiple of 32, we want the rest here.
-    if (i < size) {
-      p = present(i / 32)
-      m = 1
-      while (i < size) {
-        if ((p & m) != 0) f(i)
-        m = m << 1
-        i += 1
-      }
+    while (i < len) {
+      if (occupied(present, i)) f(buckets(i))
+      i += 1
     }
   }
 
@@ -293,49 +266,50 @@ final class BitmaskSet[@spec A](as:Array[A], ps:Array[Int], n:Int, s:Int)(implic
   var mask = s - 1 // size-1, used for hashing
   var limit = (s * 0.65).toInt // point at which we should resize
 
-  def occupied(pres:Array[Int], i:Int) = (pres(i / 32) & (1 << (i % 32))) != 0
-  def vacant(pres:Array[Int], i:Int) = (pres(i / 32) & (1 << (i % 32))) == 0
+  @inline final def occupied(pres:Array[Int], i:Int) = (pres(i >> 5) & (1 << (i & 31))) != 0
+  @inline final def vacant(pres:Array[Int], i:Int) = (pres(i >> 5) & (1 << (i & 31))) == 0
 
   def hash(item:A, mask:Int, bs:Array[A], ps:Array[Int]):Int = {
-    var i = item.hashCode // get a hash code for the item
-    var j = i & mask // ensure j is positive and within [0, size]
-    
-    // return if we have a vacant bucket, or our own bucket
-    if (vacant(ps, j) || bs(j) == item) return j
-    
+    var i = item.hashCode & 0x7fffffff // positive hash code for the item
+    var perturbation = i // perturbation helps avoid collisions
+
     // while there are collisions, we have to keep modifying our index to find
     // new addresses. the open addressing scheme here is inspired by python's.
-    var perturbation = i
     while (true) {
-      i = (i << 2) + i + perturbation + 1
-      j = i & mask
-    
-      // again, return if we have a vacant (or owned) bucket
+      // j is the index we're going to try
+      val j = i & mask
+
+      // if the index is empty
       if (vacant(ps, j) || bs(j) == item) return j
-    
+
+      // otherwise, find a new index to try
+      i = (i << 2) + i + perturbation + 1
       perturbation >>= 5
     }
     
     // should never happen
-    sys.error("should not happen")
     -1
   }
 
-  def resize() {
+  def resize():A = {
     val factor = if (size < 10000) 4 else 2
 
     val nextsize = size * factor
     val nextmask = nextsize - 1
     val nextbuckets = Array.ofDim[A](nextsize)
-    val nextpresent = Array.ofDim[Int]((nextsize + 31) / 32)
+    val nextpresent = Array.ofDim[Int]((nextsize + 31) >> 5)
 
     if (nextsize < 0) sys.error("oh no!")
 
-    foreach {
-      item =>
-      val i = hash(item, nextmask, nextbuckets, nextpresent)
-      nextbuckets(i) = item
-      nextpresent(i / 32) |= (1 << (i % 32))
+    var i = 0
+    while (i < len) {
+      if (occupied(present, i)) {
+        val item = buckets(i)
+        val j = hash(item, nextmask, nextbuckets, nextpresent)
+        nextbuckets(j) = item
+        nextpresent(j >> 5) |= (1 << (j & 31))
+      }
+      i += 1
     }
 
     size = nextsize
@@ -343,5 +317,6 @@ final class BitmaskSet[@spec A](as:Array[A], ps:Array[Int], n:Int, s:Int)(implic
     buckets = nextbuckets
     present = nextpresent
     limit = (size * 0.65).toInt
+    nul
   }
 }
