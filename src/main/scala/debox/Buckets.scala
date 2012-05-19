@@ -27,18 +27,19 @@ object Buckets {
     val arr = Array.ofDim[A](n)
     Unset[A].get match {
       case Some(mark) => new MarkedBuckets(arr, mark)
-      case None => new BitmaskBuckets(arr, Array.ofDim[Int]((n + 31) / 32))
+      case None => new BitmaskBuckets(arr, Array.ofDim[Int]((n + 31) >> 5))
     }
   }
 }
 
 trait Buckets[@spec A] {
   def arr: Array[A]
-  def length: Int = arr.length
+  @inline final def length: Int = arr.length
   def set(i:Int, a:A): Unit
   def unset(i:Int): A
   def isSet(i:Int, a:A): Boolean
-  def foreach(f:A => Unit) {
+
+  final def foreach(f:A => Unit) {
     val as = arr
     var i = 0
     val len = length
@@ -48,7 +49,8 @@ trait Buckets[@spec A] {
       i += 1
     }
   }
-  def map[@spec B:Manifest:Unset](f:A => B): Buckets[B] = {
+
+  final def map[@spec B:Manifest:Unset](f:A => B): Buckets[B] = {
     val buckets = Buckets.empty[B]
     val as = arr
     var i = 0
@@ -62,14 +64,16 @@ trait Buckets[@spec A] {
   }
 }
 
-class MarkedBuckets[@spec A](val arr:Array[A], mark:A) extends Buckets[A] {
-  def set(i:Int, a:A): Unit = arr(i) = a
-  def unset(i:Int): A = { val a = arr(i); arr(i) = mark; a }
-  def isSet(i:Int, a:A): Boolean = a == mark
+final class MarkedBuckets[@spec A](val arr:Array[A], mark:A) extends Buckets[A] {
+  final val nul = mark
+  final def set(i:Int, a:A): Unit = arr(i) = a
+  final def unset(i:Int): A = { val a = arr(i); arr(i) = nul; nul }
+  final def isSet(i:Int, a:A): Boolean = a == nul
 }
 
-class BitmaskBuckets[@spec A](val arr:Array[A], mask:Array[Int]) extends Buckets[A] {
-  def set(i:Int, a:A): Unit = { arr(i) = a; mask(i / 32) |= (1 << (i % 32)) }
-  def unset(i:Int): A = { mask(i / 32) &= ~(1 << (i % 32)); arr(i) }
-  def isSet(i:Int, a:A): Boolean = (mask(i / 32) & (1 << (i % 32))) != 0
+final class BitmaskBuckets[@spec A](val arr:Array[A], mask:Array[Int]) extends Buckets[A] {
+  final val nul = null.asInstanceOf[A]
+  final def set(i:Int, a:A): Unit = { arr(i) = a; mask(i >> 5) |= (1 << (i & 31)) }
+  final def unset(i:Int): A = { mask(i >> 5) &= ~(1 << (i & 31)); nul }
+  final def isSet(i:Int, a:A): Boolean = arr(i) != nul || (mask(i >> 5) & (1 << (i & 31))) != 0
 }
