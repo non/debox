@@ -22,18 +22,18 @@ trait Unset[A] {
   def exists:Boolean = get.isDefined
 }
 
-class NoUnset[A] extends Unset[A] { def get:Option[A] = None }
-class MarkedUnset[A](a:A) extends Unset[A] { def get:Option[A] = Some(a) }
+case class NoUnset[A]() extends Unset[A] { def get:Option[A] = None }
+case class MarkedUnset[A](nul:A) extends Unset[A] { def get:Option[A] = Some(nul) }
 
 object Unset extends LowPriorityImplicits {
   def apply[A](implicit u:Unset[A]):Unset[A] = u
-  def marked[A](a:A):Unset[A] = new MarkedUnset[A](a)
+  def marked[A](a:A):Unset[A] = MarkedUnset(a)
 
   object Implicits {
-    implicit def anyrefHasNullUnset[A <: AnyRef]:Unset[A] = new MarkedUnset[A](null.asInstanceOf[A])
+    implicit def anyrefHasNullUnset[A <: AnyRef]:Unset[A] = MarkedUnset(null.asInstanceOf[A])
   }
 }
 
 trait LowPriorityImplicits {
-  implicit def anyHasNoUnset[A]:Unset[A] = new NoUnset[A]
+  implicit def anyHasNoUnset[A]:Unset[A] = NoUnset[A]()
 }
