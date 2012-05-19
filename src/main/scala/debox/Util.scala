@@ -12,23 +12,10 @@ object Util {
   }
 
   def copy[@spec A](src:Array[A], dst:Array[A], s1:Int, d1:Int, len:Int) {
-    var i = s1
-    var j = d1
-    var k = s1 + len
-    while (i < k) {
-      dst(j) = src(i)
-      i += 1
-      j += 1
-    }
+    System.arraycopy(src, s1, dst, d1, len)
   }
 
   def rcopy[@spec A](src:Array[A], dst:Array[A], s1:Int, d1:Int, len:Int) {
-    var i = s1 + len - 1
-    var j = d1 + len - 1
-    while (i >= s1) {
-      dst(j) = src(i)
-      i -= 1
-      j -= 1
-    }
+    System.arraycopy(src, s1, dst, d1, len)
   }
 }
