@@ -34,7 +34,7 @@ object Buckets {
 
 trait Buckets[@spec A] {
   def arr: Array[A]
-  @inline final def length: Int = arr.length
+  final def length: Int = arr.length
   def set(i:Int, a:A): Unit
   def unset(i:Int): A
   def isSet(i:Int, a:A): Boolean
