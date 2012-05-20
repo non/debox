@@ -11,7 +11,7 @@ import debox.buffer._
 object BufferBenchmarks extends MyRunner(classOf[BufferBenchmarks])
 
 class BufferBenchmarks extends MyBenchmark {
-  @Param(Array("10", "15", "20", "23"))
+  @Param(Array("8", "11", "14", "17", "20"))
   var pow:Int = 0
 
   var data:Array[Long] = null
