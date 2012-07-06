@@ -6,6 +6,7 @@ import scala.util.Random._
 
 import com.google.caliper.Param
 
+import debox._
 import debox.buffer._
 
 object BufferBenchmarks extends MyRunner(classOf[BufferBenchmarks])

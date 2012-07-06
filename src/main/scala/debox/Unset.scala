@@ -17,16 +17,12 @@ package debox
  * "critical path" but rather to determine which type of objects to build.
  */
 
-trait Unset[A] {
-  def get:Option[A]
-  def exists:Boolean = get.isDefined
-}
-
-case class NoUnset[A]() extends Unset[A] { def get:Option[A] = None }
-case class MarkedUnset[A](nul:A) extends Unset[A] { def get:Option[A] = Some(nul) }
+sealed trait Unset[+A]
+case object NoUnset extends Unset[Nothing]
+case class MarkedUnset[+A](nul:A) extends Unset[A]
 
 object Unset extends LowPriorityImplicits {
-  def apply[A](implicit u:Unset[A]):Unset[A] = u
+  @inline final def apply[A](implicit u:Unset[A]):Unset[A] = u
   def marked[A](a:A):Unset[A] = MarkedUnset(a)
 
   object Implicits {
@@ -35,5 +31,5 @@ object Unset extends LowPriorityImplicits {
 }
 
 trait LowPriorityImplicits {
-  implicit def anyHasNoUnset[A]:Unset[A] = NoUnset[A]()
+  implicit def anyHasNoUnset[A]:Unset[A] = NoUnset
 }
