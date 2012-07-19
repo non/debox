@@ -3,11 +3,22 @@ import sbt.Keys._
 
 object MyBuild extends Build {
   override lazy val settings = super.settings ++ Seq(
-    name := "Spire",
-    version := "0.2.0",
-    scalaVersion := "2.9.2",
-    scalacOptions ++= Seq("-deprecation", "-unchecked", "-optimize"),
-    libraryDependencies += "org.scalatest" %% "scalatest" % "1.7.2" % "test"
+    name := "Debox",
+    version := "0.1.0",
+    //scalaVersion := "2.9.2",
+    scalaVersion := "2.10.0-M4",
+    scalacOptions ++= Seq(
+      "-deprecation",
+      "-unchecked",
+      "-optimize",
+      "-Yinline-warnings"
+    ),
+    //scalacOptions ++= Seq("-deprecation", "-unchecked", "-optimize", "-no-specialization"),
+    //libraryDependencies += "org.scalatest" %% "scalatest" % "1.7.2" % "test"
+    libraryDependencies ++= Seq(
+      "org.scalatest" % "scalatest_2.10.0-M4" % "1.9-2.10.0-M4-B2" % "test",
+      "org.scala-lang" % "scala-reflect" % "2.10.0-M4"
+    )
   )
 
   val key = AttributeKey[Boolean]("javaOptionsPatched")
