@@ -5,27 +5,28 @@ object MyBuild extends Build {
   override lazy val settings = super.settings ++ Seq(
     name := "Debox",
     version := "0.1.0",
-    //scalaVersion := "2.9.2",
-    scalaVersion := "2.10.0-M4",
+    scalaVersion := "2.9.2",
+    //scalaVersion := "2.10.0-M4",
+
     scalacOptions ++= Seq(
+      //"-Yinline-warnings",
       "-deprecation",
       "-unchecked",
-      "-optimize",
-      "-Yinline-warnings"
+      "-optimize"
     ),
-    //scalacOptions ++= Seq("-deprecation", "-unchecked", "-optimize", "-no-specialization"),
-    //libraryDependencies += "org.scalatest" %% "scalatest" % "1.7.2" % "test"
+
     libraryDependencies ++= Seq(
-      "org.scalatest" % "scalatest_2.10.0-M4" % "1.9-2.10.0-M4-B2" % "test",
-      "org.scala-lang" % "scala-reflect" % "2.10.0-M4"
+      "org.scalatest" %% "scalatest" % "1.7.2" % "test"
+      //"org.scalatest" % "scalatest_2.10.0-M4" % "1.9-2.10.0-M4-B2" % "test",
+      //"org.scala-lang" % "scala-reflect" % "2.10.0-M4"
     )
   )
 
   val key = AttributeKey[Boolean]("javaOptionsPatched")
 
-  lazy val debox = Project("debox", file("."))
+  lazy val root = Project("root", file("."))
 
-  lazy val benchmark: Project = Project("benchmark", file("benchmark")) settings (benchmarkSettings: _*) dependsOn (debox)
+  lazy val benchmark: Project = Project("benchmark", file("benchmark")) settings (benchmarkSettings: _*) dependsOn (root)
 
   def benchmarkSettings = Seq(
     // raise memory limits here if necessary
@@ -43,10 +44,12 @@ object MyBuild extends Build {
 
     // custom kludge to get caliper to see the right classpath
 
-    // we need to add the runtime classpath as a "-cp" argument to the `javaOptions in run`, otherwise caliper
-    // will not see the right classpath and die with a ConfigurationException
-    // unfortunately `javaOptions` is a SettingsKey and `fullClasspath in Runtime` is a TaskKey, so we need to
-    // jump through these hoops here in order to feed the result of the latter into the former
+    // we need to add the runtime classpath as a "-cp" argument to the
+    // `javaOptions in run`, otherwise caliper will not see the right classpath
+    // and die with a ConfigurationException. unfortunately `javaOptions` is a
+    // SettingsKey and `fullClasspath in Runtime` is a TaskKey, so we need to
+    // jump through these hoops here in order to feed the result of the latter
+    // into the former
     onLoad in Global ~= { previous => state =>
       previous {
         state.get(key) match {
@@ -55,12 +58,11 @@ object MyBuild extends Build {
             val classPath = Project.runTask(fullClasspath in Runtime in benchmark, state).get._2.toEither.right.get.files.mkString(":")
             // return a state with javaOptionsPatched = true and javaOptions set correctly
             Project.extract(state).append(Seq(javaOptions in (benchmark, run) ++= Seq("-cp", classPath)), state.put(key, true))
-          case Some(_) =>
-            state // the javaOptions are already patched
+
+          case Some(_) => state // the javaOptions are already patched
         }
       }
     }
-
 
     // caliper stuff stolen shamelessly from scala-benchmarking-template
   )
