@@ -136,17 +136,6 @@ final class Set2[@spec A:Manifest:Unset](as:Buckets[A], n:Int, s:Int) extends Se
   }
 
   final def foreach(f:Function[A, Unit]): Unit = buckets.foreach(f)
-  //  var i = 0
-  //  var count = 0
-  //  while (count < len) {
-  //    var item = buckets(i)
-  //    if (buckets.isSet(i, item)) {
-  //      f(item)
-  //      count += 1
-  //    }
-  //    i += 1
-  //  }
-  //}
 
   override def toString = {
     var as = List[A]()
@@ -222,11 +211,8 @@ final class Set2[@spec A:Manifest:Unset](as:Buckets[A], n:Int, s:Int) extends Se
     var i = 0
     var count = 0
     while (count < len) {
-      //if (i >= buckets.length)
-      //  sys.error("i=%s bs=%s count=%s len=%s nbs=%s" format (i, buckets, count, len, nextbuckets))
       val item = buckets(i)
       if (buckets.isSet(i, item)) {
-        //nextbuckets.set(nextbuckets.hash(item, nextmask), item)
         nextbuckets.set(hash(item, nextmask, nextbuckets), item)
         count += 1
       }

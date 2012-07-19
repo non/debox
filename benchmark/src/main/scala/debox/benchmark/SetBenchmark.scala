@@ -42,33 +42,33 @@ class SetBenchmarks extends MyBenchmark {
     bitmaskBucketSet = set.Set2(data)(manifest, noUnset)
   }
 
-  // building benchmark
-  def timeBuildScalaSet(reps:Int) = run(reps)(buildScalaSet)
-  def timeBuildMarkedSet(reps:Int) = run(reps)(buildMarkedSet)
-  def timeBuildBitmaskSet(reps:Int) = run(reps)(buildMarkedSet)
-  def timeBuildMarkedBucketSet(reps:Int) = run(reps)(buildMarkedBucketSet)
-  def timeBuildBitmaskBucketSet(reps:Int) = run(reps)(buildBitmaskBucketSet)
-  
-  // foreach benchmark
-  def timeForeachScalaSet(reps:Int) = run(reps)(foreachScalaSet)
-  def timeForeachMarkedSet(reps:Int) = run(reps)(foreachMarkedSet)
-  def timeForeachBitmaskSet(reps:Int) = run(reps)(foreachBitmaskSet)
-  def timeForeachMarkedBucketSet(reps:Int) = run(reps)(foreachMarkedBucketSet)
-  def timeForeachBitmaskBucketSet(reps:Int) = run(reps)(foreachBitmaskBucketSet)
-  
-  // contains benchmark
-  def timeContainsScalaSet(reps:Int) = run(reps)(containsScalaSet)
-  def timeContainsMarkedSet(reps:Int) = run(reps)(containsMarkedSet)
-  def timeContainsBitmaskSet(reps:Int) = run(reps)(containsBitmaskSet)
-  def timeContainsMarkedBucketSet(reps:Int) = run(reps)(containsMarkedBucketSet)
-  def timeContainsBitmaskBucketSet(reps:Int) = run(reps)(containsBitmaskBucketSet)
+  //// building benchmark
+  //def timeBuildScalaSet(reps:Int) = run(reps)(buildScalaSet)
+  //def timeBuildMarkedSet(reps:Int) = run(reps)(buildMarkedSet)
+  //def timeBuildBitmaskSet(reps:Int) = run(reps)(buildMarkedSet)
+  //def timeBuildMarkedBucketSet(reps:Int) = run(reps)(buildMarkedBucketSet)
+  //def timeBuildBitmaskBucketSet(reps:Int) = run(reps)(buildBitmaskBucketSet)
+  //
+  //// foreach benchmark
+  //def timeForeachScalaSet(reps:Int) = run(reps)(foreachScalaSet)
+  //def timeForeachMarkedSet(reps:Int) = run(reps)(foreachMarkedSet)
+  //def timeForeachBitmaskSet(reps:Int) = run(reps)(foreachBitmaskSet)
+  //def timeForeachMarkedBucketSet(reps:Int) = run(reps)(foreachMarkedBucketSet)
+  //def timeForeachBitmaskBucketSet(reps:Int) = run(reps)(foreachBitmaskBucketSet)
+  //
+  //// contains benchmark
+  //def timeContainsScalaSet(reps:Int) = run(reps)(containsScalaSet)
+  //def timeContainsMarkedSet(reps:Int) = run(reps)(containsMarkedSet)
+  //def timeContainsBitmaskSet(reps:Int) = run(reps)(containsBitmaskSet)
+  //def timeContainsMarkedBucketSet(reps:Int) = run(reps)(containsMarkedBucketSet)
+  //def timeContainsBitmaskBucketSet(reps:Int) = run(reps)(containsBitmaskBucketSet)
 
   // map benchmark
   def timeMapScalaSet(reps:Int) = run(reps)(mapScalaSet)
-  def timeMapMarkedSet2Marked(reps:Int) = run(reps)(mapMarkedSet2Marked)
-  def timeMapMarkedSet2Bitmask(reps:Int) = run(reps)(mapMarkedSet2Bitmask)
-  def timeMapBitmaskSet2Marked(reps:Int) = run(reps)(mapBitmaskSet2Marked)
-  def timeMapBitmaskSet2Bitmask(reps:Int) = run(reps)(mapBitmaskSet2Bitmask)
+  //def timeMapMarkedSet2Marked(reps:Int) = run(reps)(mapMarkedSet2Marked)
+  //def timeMapMarkedSet2Bitmask(reps:Int) = run(reps)(mapMarkedSet2Bitmask)
+  //def timeMapBitmaskSet2Marked(reps:Int) = run(reps)(mapBitmaskSet2Marked)
+  //def timeMapBitmaskSet2Bitmask(reps:Int) = run(reps)(mapBitmaskSet2Bitmask)
   def timeMapMarkedBucketSet(reps:Int) = run(reps)(mapMarkedBucketSet)
   def timeMapBitmaskBucketSet(reps:Int) = run(reps)(mapBitmaskBucketSet)
 
@@ -247,16 +247,16 @@ class SetBenchmarks extends MyBenchmark {
   }
 
   // map
-  def mapScalaSet = scalaSet.map(_.toString)
+  def mapScalaSet = scalaSet.map(_.toInt + 3)
 
-  val ms = implicitly[Manifest[String]]
+  val ms = implicitly[Manifest[Int]]
 
-  def mapMarkedSet2Marked = markedSet.map(_.toString)(ms, MarkedUnset(null))
-  def mapMarkedSet2Bitmask = markedSet.map(_.toString)(ms, NoUnset)
+  def mapMarkedSet2Marked = markedSet.map(_.toInt + 3)(ms, MarkedUnset(0))
+  def mapMarkedSet2Bitmask = markedSet.map(_.toInt + 3)(ms, NoUnset)
 
-  def mapBitmaskSet2Marked = bitmaskSet.map(_.toString)(ms, MarkedUnset(null))
-  def mapBitmaskSet2Bitmask = bitmaskSet.map(_.toString)(ms, NoUnset)
+  def mapBitmaskSet2Marked = bitmaskSet.map(_.toInt + 3)(ms, MarkedUnset(0))
+  def mapBitmaskSet2Bitmask = bitmaskSet.map(_.toInt + 3)(ms, NoUnset)
 
-  def mapMarkedBucketSet = markedBucketSet.map(_.toString)
-  def mapBitmaskBucketSet = bitmaskBucketSet.map(_.toString)
+  def mapMarkedBucketSet = markedBucketSet.map(_.toInt + 3)
+  def mapBitmaskBucketSet = bitmaskBucketSet.map(_.toInt + 3)
 }
