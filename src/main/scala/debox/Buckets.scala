@@ -23,25 +23,80 @@ import scala.{specialized => spec}
  * End users should probably prefer a class based on Buckets.
  */
 sealed trait Buckets[@spec A] {
-  protected[this] def arr: Array[A]
 
+  /**
+   * The total number of buckets (both set and unset).
+   */
   def length: Int
+
+  /**
+   * Access a particular bucket. If the bucket is unset then the return value
+   * is not defined.
+   */
   def apply(i:Int): A
 
+  /**
+   * Mark bucket 'i' as holding the value 'a'.
+   */
   def set(i:Int, a:A): Unit
+
+  /**
+   * Mark bucket 'i' as being unset (holding no value).
+   */
   def unset(i:Int): A
+
+  /**
+   * Test if bucket 'i' is set.
+   *
+   * The parameter 'a' should be set to the value of bucket 'i', although in
+   * some cases it won't be used. This parameter is necessary to work around
+   * specialization bugs (as of Scala 2.10).
+   */
   def isSet(i:Int, a:A): Boolean
+
+  /**
+   * Test if bucket 'i' is unset.
+   *
+   * The parameter 'a' should be set to the value of bucket 'i', although in
+   * some cases it won't be used. This parameter is necessary to work around
+   * specialization bugs (as of Scala 2.10).
+   */
   def isUnset(i:Int, a:A): Boolean
 
+  /**
+   * Test to see if bucket 'i' holds the value 'a'.
+   */
   def hasItemAt(i:Int, a:A): Boolean
 
+  /**
+   * Test to see if bucket 'i' does not hold the value 'a'.
+   */
+  def notItemAt(i:Int, a:A): Boolean
+
+  /**
+   * Copy these buckets to a new object, as efficiently as possible.
+   */
   def copy: Buckets[A]
 
+  /**
+   * Run function 'f' on every bucket with a set value.
+   *
+   * Unset buckets are skipped.
+   */
   def foreach(f:A => Unit): Unit
 
+  /**
+   * Create a new bucket object, where every existing bucket with a set value
+   * is mapped through the function 'f'.
+   *
+   * Buckets which are unset in this object will be unset in the result.
+   */
   def map[@spec B:Manifest:Unset](f:A => B): Buckets[B]
 }
 
+/**
+ * The Buckets object provides some useful factory methods.
+ */
 object Buckets {
   final def empty[@spec A:Unset:Manifest]: Buckets[A] = Buckets.ofDim[A](8)
 
@@ -52,19 +107,19 @@ object Buckets {
 }
 
 
-final class MarkedBuckets[@spec A](as:Array[A], mark:A) extends Buckets[A] {
+final class MarkedBuckets[@spec A] protected[debox] (as:Array[A], mark:A) extends Buckets[A] {
   final val nul = mark
-  final def arr = as
 
   @inline final def length: Int = as.length
   @inline final def apply(i:Int): A = as(i)
 
   final def set(i:Int, a:A): Unit = as(i) = a
-  final def unset(i:Int): A = { val a = as(i); as(i) = nul; nul }
+  final def unset(i:Int): A = { val a = as(i); as(i) = nul; null.asInstanceOf[A] }
   @inline final def isSet(i:Int, a:A): Boolean = a != nul
   @inline final def isUnset(i:Int, a:A): Boolean = a == nul
 
   final def hasItemAt(i:Int, a:A): Boolean = a == as(i)
+  final def notItemAt(i:Int, a:A): Boolean = a != as(i)
 
   final def copy = new MarkedBuckets(as.clone, mark)
 
@@ -89,22 +144,20 @@ final class MarkedBuckets[@spec A](as:Array[A], mark:A) extends Buckets[A] {
     }
     buckets
   }
-
 }
 
-final class BitmaskBuckets[@spec A](as:Array[A], mask:Array[Int]) extends Buckets[A] {
-  final val nul = null.asInstanceOf[A] // this breaks if specialization is off
-  final def arr = as
+final class BitmaskBuckets[@spec A] protected[debox] (as:Array[A], mask:Array[Int]) extends Buckets[A] {
 
   @inline final def length: Int = as.length
   @inline final def apply(i:Int): A = as(i)
 
   final def set(i:Int, a:A): Unit = { as(i) = a; mask(i >> 5) |= (1 << (i & 31)) }
-  final def unset(i:Int): A = { mask(i >> 5) &= ~(1 << (i & 31)); nul }
+  final def unset(i:Int): A = { mask(i >> 5) &= ~(1 << (i & 31)); null.asInstanceOf[A] }
   @inline final def isSet(i:Int, a:A): Boolean = (mask(i >> 5) & (1 << (i & 31))) != 0
   @inline final def isUnset(i:Int, a:A): Boolean = (mask(i >> 5) & (1 << (i & 31))) == 0
 
   final def hasItemAt(i:Int, a:A): Boolean = isSet(i, a) && a == as(i)
+  final def notItemAt(i:Int, a:A): Boolean = isUnset(i, a) || a != as(i)
 
   final def copy = new BitmaskBuckets(as.clone, mask.clone)
 
