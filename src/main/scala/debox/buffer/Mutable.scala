@@ -35,7 +35,7 @@ final class Mutable[@spec A:Manifest](as:Array[A], n:Int) extends Buffer[A] {
     if (len + n > x) {
       val x2 = if (x < 4) 8 else if (x <= 0x3fffffff) x * 2 else Int.MaxValue
       val as = Array.ofDim[A](x2)
-      Util.copy(elems, as, 0, 0, len)
+      System.arraycopy(elems, 0, as, 0, len)
       elems = as
     }
   }
@@ -44,7 +44,7 @@ final class Mutable[@spec A:Manifest](as:Array[A], n:Int) extends Buffer[A] {
   def prepend(a:A):Unit = insert(0, a)
   def insert(i:Int, a:A):Unit = {
     resizeIfNecessary(1)
-    Util.rcopy(elems, elems, i, i + 1, len - i)
+    System.arraycopy(elems, i, elems, i + 1, len - i)
     elems(i) = a
     len += 1
   }
@@ -54,13 +54,13 @@ final class Mutable[@spec A:Manifest](as:Array[A], n:Int) extends Buffer[A] {
   def splice(i:Int, as:Array[A]):Unit = {
     val n = as.length
     resizeIfNecessary(as.length)
-    Util.rcopy(elems, elems, i, i + as.length, len - i)
-    Util.copy(as, elems, 0, i, as.length)
+    System.arraycopy(elems, i, elems, i + as.length, len - i)
+    System.arraycopy(as, 0, elems, i, as.length)
     len += as.length
   }
 
   def remove(i:Int):Unit = {
-    Util.copy(elems, elems, i + 1, i, len - i - 1)
+    System.arraycopy(elems, i + 1, elems, i, len - i - 1)
     len -= 1
   }
   def pop(i:Int):A = {

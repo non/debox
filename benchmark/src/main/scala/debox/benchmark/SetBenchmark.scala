@@ -13,18 +13,19 @@ object SetBenchmarks extends MyRunner(classOf[SetBenchmarks])
 
 class SetBenchmarks extends MyBenchmark {
   //@Param(Array("8", "11", "14", "17", "20"))
-  @Param(Array("14"))
+  @Param(Array("17"))
   var pow:Int = 0
 
   var data:Array[Long] = null
   var data2:Array[Long] = null
   var scalaSet:mutable.Set[Long] = null
-  var markedSet:set.Set2[Long] = null
-  var bitmaskSet:set.Set2[Long] = null
+  var markedSet:set.Set[Long] = null
+  var bitmaskSet:set.Set[Long] = null
 
   val manifest = implicitly[Manifest[Long]]
   val noUnset = NoUnset
   val markZero = MarkedUnset(0L)
+  val hashLong = Hash.LongHash
 
   var j = 1
 
@@ -34,8 +35,8 @@ class SetBenchmarks extends MyBenchmark {
     data2 = init(n / 10)(nextLong).map(n => if(n == 0L) n + 1 else n)
 
     scalaSet = mutable.Set(data:_*)
-    markedSet = set.Set2(data)(manifest, markZero)
-    bitmaskSet = set.Set2(data)(manifest, noUnset)
+    markedSet = set.Set(data)(manifest, markZero, hashLong)
+    bitmaskSet = set.Set(data)(manifest, noUnset, hashLong)
   }
 
   // building benchmark
@@ -43,20 +44,20 @@ class SetBenchmarks extends MyBenchmark {
   def timeBuildMarkedSet(reps:Int) = run(reps)(buildMarkedSet)
   def timeBuildBitmaskSet(reps:Int) = run(reps)(buildBitmaskSet)
   
-  // foreach benchmark
-  def timeForeachScalaSet(reps:Int) = run(reps)(foreachScalaSet)
-  def timeForeachMarkedSet(reps:Int) = run(reps)(foreachMarkedSet)
-  def timeForeachBitmaskSet(reps:Int) = run(reps)(foreachBitmaskSet)
+  //// foreach benchmark
+  //def timeForeachScalaSet(reps:Int) = run(reps)(foreachScalaSet)
+  //def timeForeachMarkedSet(reps:Int) = run(reps)(foreachMarkedSet)
+  //def timeForeachBitmaskSet(reps:Int) = run(reps)(foreachBitmaskSet)
   
   // contains benchmark
   def timeContainsScalaSet(reps:Int) = run(reps)(containsScalaSet)
   def timeContainsMarkedSet(reps:Int) = run(reps)(containsMarkedSet)
   def timeContainsBitmaskSet(reps:Int) = run(reps)(containsBitmaskSet)
   
-  // map benchmark
-  def timeMapScalaSet(reps:Int) = run(reps)(mapScalaSet)
-  def timeMapMarkedSet(reps:Int) = run(reps)(mapMarkedSet)
-  def timeMapBitmaskSet(reps:Int) = run(reps)(mapBitmaskSet)
+  //// map benchmark
+  //def timeMapScalaSet(reps:Int) = run(reps)(mapScalaSet)
+  //def timeMapMarkedSet(reps:Int) = run(reps)(mapMarkedSet)
+  //def timeMapBitmaskSet(reps:Int) = run(reps)(mapBitmaskSet)
 
   // building benchmark
   def buildScalaSet:Int = {
@@ -68,7 +69,7 @@ class SetBenchmarks extends MyBenchmark {
   }
 
   def buildMarkedSet:Int = {
-    val s = set.Set2.empty[Long](manifest, markZero)
+    val s = set.Set.empty[Long](manifest, markZero, Hash.LongHash)
     var i = 0
     val len = data.length
     while (i < len) { s.add(data(i)); i += 1 }
@@ -76,7 +77,7 @@ class SetBenchmarks extends MyBenchmark {
   }
 
   def buildBitmaskSet:Int = {
-    val s = set.Set2.empty[Long](manifest, noUnset)
+    val s = set.Set.empty[Long](manifest, noUnset, Hash.LongHash)
     var i = 0
     val len = data.length
     while (i < len) { s.add(data(i)); i += 1 }
@@ -140,6 +141,6 @@ class SetBenchmarks extends MyBenchmark {
   val ms = implicitly[Manifest[Int]]
 
   def mapScalaSet = scalaSet.map(_.toInt + 3)
-  def mapMarkedSet = markedSet.map(_.toInt + 3)(ms, MarkedUnset(0))
-  def mapBitmaskSet = bitmaskSet.map(_.toInt + 3)(ms, NoUnset)
+  def mapMarkedSet = markedSet.map(_.toInt + 3)(ms, MarkedUnset(0), Hash.IntHash)
+  def mapBitmaskSet = bitmaskSet.map(_.toInt + 3)(ms, NoUnset, Hash.IntHash)
 }
