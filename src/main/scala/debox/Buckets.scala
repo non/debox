@@ -36,6 +36,11 @@ sealed trait Buckets[@spec A] {
   def apply(i:Int): A
 
   /**
+   * Set a particular bucket 'i' to hold the value 'a'. Alias for set().
+   */
+  def update(i:Int, a:A): Unit
+
+  /**
    * Mark bucket 'i' as holding the value 'a'.
    */
   def set(i:Int, a:A): Unit
@@ -86,6 +91,13 @@ sealed trait Buckets[@spec A] {
   def foreach(f:A => Unit): Unit
 
   /**
+   * Run function 'f' on the index of every bucket with a set value.
+   *
+   * Unset buckets are skipped. Return value is only to trigger specialization.
+   */
+  def foreachIndex(f:Int => Unit): A
+
+  /**
    * Create a new bucket object, where every existing bucket with a set value
    * is mapped through the function 'f'.
    *
@@ -113,6 +125,8 @@ final class MarkedBuckets[@spec A] protected[debox] (as:Array[A], mark:A) extend
   @inline final def length: Int = as.length
   @inline final def apply(i:Int): A = as(i)
 
+  final def update(i:Int, a:A): Unit = as(i) = a
+
   final def set(i:Int, a:A): Unit = as(i) = a
   final def unset(i:Int): A = { val a = as(i); as(i) = nul; null.asInstanceOf[A] }
   @inline final def isSet(i:Int, a:A): Boolean = a != nul
@@ -123,7 +137,7 @@ final class MarkedBuckets[@spec A] protected[debox] (as:Array[A], mark:A) extend
 
   final def copy = new MarkedBuckets(as.clone, mark)
 
-  final def foreach(f:A => Unit) {
+  final def foreach(f:A => Unit):Unit = {
     var i = 0
     val len = length
     while (i < len) {
@@ -131,6 +145,16 @@ final class MarkedBuckets[@spec A] protected[debox] (as:Array[A], mark:A) extend
       if (a != nul) f(a)
       i += 1
     }
+  }
+
+  final def foreachIndex(f:Int => Unit):A = {
+    var i = 0
+    val len = length
+    while (i < len) {
+      if (as(i) != nul) f(i)
+      i += 1
+    }
+    null.asInstanceOf[A]
   }
 
   final def map[@spec B:Manifest:Unset](f:A => B): Buckets[B] = {
@@ -150,6 +174,8 @@ final class BitmaskBuckets[@spec A] protected[debox] (as:Array[A], mask:Array[In
 
   @inline final def length: Int = as.length
   @inline final def apply(i:Int): A = as(i)
+
+  final def update(i:Int, a:A): Unit = { as(i) = a; mask(i >> 5) |= (1 << (i & 31)) }
 
   final def set(i:Int, a:A): Unit = { as(i) = a; mask(i >> 5) |= (1 << (i & 31)) }
   final def unset(i:Int): A = { mask(i >> 5) &= ~(1 << (i & 31)); null.asInstanceOf[A] }
@@ -215,6 +241,63 @@ final class BitmaskBuckets[@spec A] protected[debox] (as:Array[A], mask:Array[In
       if (isSet(i, a)) f(a)
       i += 1
     }
+  }
+
+  final def foreachIndex(f:Function[Int, Unit]): A = {
+    var i = 0
+    var j = 0
+    val limit = mask.length - 1
+    val _len = length
+
+    while (j < limit) {
+      val b = mask(j)
+
+      if ((b & 0x00000001) != 0) f(i)
+      if ((b & 0x00000002) != 0) f(i + 1)
+      if ((b & 0x00000004) != 0) f(i + 2)
+      if ((b & 0x00000008) != 0) f(i + 3)
+      if ((b & 0x00000010) != 0) f(i + 4)
+      if ((b & 0x00000020) != 0) f(i + 5)
+      if ((b & 0x00000040) != 0) f(i + 6)
+      if ((b & 0x00000080) != 0) f(i + 7)
+
+      if ((b & 0x00000100) != 0) f(i + 8)
+      if ((b & 0x00000200) != 0) f(i + 9)
+      if ((b & 0x00000400) != 0) f(i + 10)
+      if ((b & 0x00000800) != 0) f(i + 11)
+      if ((b & 0x00001000) != 0) f(i + 12)
+      if ((b & 0x00002000) != 0) f(i + 13)
+      if ((b & 0x00004000) != 0) f(i + 14)
+      if ((b & 0x00008000) != 0) f(i + 15)
+
+      if ((b & 0x00010000) != 0) f(i + 16)
+      if ((b & 0x00020000) != 0) f(i + 17)
+      if ((b & 0x00040000) != 0) f(i + 18)
+      if ((b & 0x00080000) != 0) f(i + 19)
+      if ((b & 0x00100000) != 0) f(i + 20)
+      if ((b & 0x00200000) != 0) f(i + 21)
+      if ((b & 0x00400000) != 0) f(i + 22)
+      if ((b & 0x00800000) != 0) f(i + 23)
+
+      if ((b & 0x01000000) != 0) f(i + 24)
+      if ((b & 0x02000000) != 0) f(i + 25)
+      if ((b & 0x04000000) != 0) f(i + 26)
+      if ((b & 0x08000000) != 0) f(i + 27)
+      if ((b & 0x10000000) != 0) f(i + 28)
+      if ((b & 0x20000000) != 0) f(i + 29)
+      if ((b & 0x40000000) != 0) f(i + 30)
+      if ((b & 0x80000000) != 0) f(i + 31)
+
+      i += 32
+      j += 1
+    }
+
+    while (i < _len) {
+      if (isSet(i, as(i))) f(i)
+      i += 1
+    }
+
+    null.asInstanceOf[A]
   }
 
   final def map[@spec B:Manifest:Unset](f:A => B): Buckets[B] = {
