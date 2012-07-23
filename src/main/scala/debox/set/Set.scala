@@ -37,7 +37,7 @@ object Set {
   private def size(n:Int) = {
     var sz = 8
     var limit = 5
-    while (n < limit) {
+    while (n > limit) {
       if (sz < 10000) sz <<= 2 else sz <<= 1
       limit = (sz * 0.65).toInt
       if (sz <= 0) sys.error("overflow")
