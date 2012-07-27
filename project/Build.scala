@@ -6,7 +6,7 @@ object MyBuild extends Build {
     name := "Debox",
     version := "0.1.0",
     //scalaVersion := "2.9.2",
-    scalaVersion := "2.10.0-M4",
+    scalaVersion := "2.10.0-M5",
 
     scalacOptions ++= Seq(
       "-Yinline-warnings",
@@ -17,8 +17,8 @@ object MyBuild extends Build {
 
     libraryDependencies ++= Seq(
       //"org.scalatest" %% "scalatest" % "1.7.2" % "test"
-      "org.scalatest" % "scalatest_2.10.0-M4" % "1.9-2.10.0-M4-B2" % "test",
-      "org.scala-lang" % "scala-reflect" % "2.10.0-M4"
+      "org.scalatest" % "scalatest_2.10.0-M5" % "1.9-2.10.0-M5-B1" % "test",
+      "org.scala-lang" % "scala-reflect" % "2.10.0-M5"
     )
   )
 
@@ -30,7 +30,7 @@ object MyBuild extends Build {
 
   def benchmarkSettings = Seq(
     // raise memory limits here if necessary
-    javaOptions in run += "-Xmx4G",
+    javaOptions in run += "-Xmx6G",
 
     libraryDependencies ++= Seq(
       "com.google.guava" % "guava" % "r09",
