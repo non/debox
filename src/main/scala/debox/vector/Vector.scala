@@ -15,12 +15,11 @@ object Vector {
   @inline final def size5 = 33554432
   @inline final def size6 = 1073741824
 
-  @inline final def mask1 = 31
-  @inline final def mask2 = 1023
-  @inline final def mask3 = 32767
-  @inline final def mask4 = 1048575
-  @inline final def mask5 = 33554431
-  @inline final def mask6 = 1073741823
+  @inline final def mask2 = 31
+  @inline final def mask3 = 1023
+  @inline final def mask4 = 32767
+  @inline final def mask5 = 1048575
+  @inline final def mask6 = 33554431
 
   @inline final def shift1 = 0
   @inline final def shift2 = 5
@@ -106,13 +105,13 @@ object Vector {
 
   @inline final def alloc0[@spec A:ClassTag] = new Array[A](32)
 
-  final def alloc1[@spec A:ClassTag](a:A) = {
+  @inline final def alloc1[@spec A:ClassTag](a:A) = {
     val arr = new Array[A](32)
     arr(0) = a
     arr
   }
 
-  final def alloc2[@spec A:ClassTag](a0:A, a1:A) = {
+  @inline final def alloc2[@spec A:ClassTag](a0:A, a1:A) = {
     val arr = new Array[A](32)
     arr(0) = a0
     arr(1) = a1
@@ -126,40 +125,40 @@ object Vector {
 
   final def iter2[@spec A](f:A => Unit, len:Int, bs:Array2[A]) {
     var i = 0
-    val q = len >> shift1
-    val r = len & mask1
+    val q = len >> shift2
+    val r = len & mask2
     while (i < q) { iter1(f, size1, bs(i)); i += 1 }
     if (r != 0) iter1(f, r, bs(q))
   }
 
   final def iter3[@spec A](f:A => Unit, len:Int, cs:Array3[A]) {
     var i = 0
-    val q = len >> shift2
-    val r = len & mask2
+    val q = len >> shift3
+    val r = len & mask3
     while (i < q) { iter2(f, size2, cs(i)); i += 1 }
     if (r != 0) iter2(f, r, cs(q))
   }
 
   final def iter4[@spec A](f:A => Unit, len:Int, ds:Array4[A]) {
     var i = 0
-    val q = len >> shift3
-    val r = len & mask3
+    val q = len >> shift4
+    val r = len & mask4
     while (i < q) { iter3(f, size3, ds(i)); i += 1 }
     if (r != 0) iter3(f, r, ds(q))
   }
 
   final def iter5[@spec A](f:A => Unit, len:Int, es:Array5[A]) {
     var i = 0
-    val q = len >> shift4
-    val r = len & mask4
+    val q = len >> shift5
+    val r = len & mask5
     while (i < q) { iter4(f, size4, es(i)); i += 1 }
     if (r != 0) iter4(f, r, es(q))
   }
 
   final def iter6[@spec A](f:A => Unit, len:Int, fs:Array6[A]) {
     var i = 0
-    val q = len >> shift5
-    val r = len & mask5
+    val q = len >> shift6
+    val r = len & mask6
     while (i < q) { iter5(f, size4, fs(i)); i += 1 }
     if (r != 0) iter5(f, r, fs(q))
   }
@@ -174,8 +173,8 @@ object Vector {
   final def mapp2[@spec A, @spec Z:ClassTag](f:A => Z, len:Int, bs:Array2[A]) = {
     val zs = alloc0[Array[Z]]
     var i = 0
-    val q = len >> shift1
-    val r = len & mask1
+    val q = len >> shift2
+    val r = len & mask2
     while (i < q) { zs(i) = mapp1(f, size1, bs(i)); i += 1 }
     if (r != 0) zs(q) = mapp1(f, r, bs(q))
     zs
@@ -184,8 +183,8 @@ object Vector {
   final def mapp3[@spec A, @spec Z:ClassTag](f:A => Z, len:Int, cs:Array3[A]) = {
     val zs = alloc0[Array2[Z]]
     var i = 0
-    val q = len >> shift2
-    val r = len & mask2
+    val q = len >> shift3
+    val r = len & mask3
     while (i < q) { zs(i) = mapp2(f, size2, cs(i)); i += 1 }
     if (r != 0) zs(q) = mapp2(f, r, cs(q))
     zs
@@ -194,8 +193,8 @@ object Vector {
   final def mapp4[@spec A, @spec Z:ClassTag](f:A => Z, len:Int, ds:Array4[A]) = {
     val zs = alloc0[Array3[Z]]
     var i = 0
-    val q = len >> shift3
-    val r = len & mask3
+    val q = len >> shift4
+    val r = len & mask4
     while (i < q) { zs(i) = mapp3(f, size3, ds(i)); i += 1 }
     if (r != 0) zs(q) = mapp3(f, r, ds(q))
     zs
@@ -204,8 +203,8 @@ object Vector {
   final def mapp5[@spec A, @spec Z:ClassTag](f:A => Z, len:Int, es:Array5[A]) = {
     val zs = alloc0[Array4[Z]]
     var i = 0
-    val q = len >> shift4
-    val r = len & mask4
+    val q = len >> shift5
+    val r = len & mask5
     while (i < q) { zs(i) = mapp4(f, size4, es(i)); i += 1 }
     if (r != 0) zs(q) = mapp4(f, r, es(q))
     zs
@@ -214,8 +213,8 @@ object Vector {
   final def mapp6[@spec A, @spec Z:ClassTag](f:A => Z, len:Int, fs:Array6[A]) = {
     val zs = alloc0[Array5[Z]]
     var i = 0
-    val q = len >> shift5
-    val r = len & mask5
+    val q = len >> shift6
+    val r = len & mask6
     while (i < q) { zs(i) = mapp5(f, size4, fs(i)); i += 1 }
     if (r != 0) zs(q) = mapp5(f, r, fs(q))
     zs

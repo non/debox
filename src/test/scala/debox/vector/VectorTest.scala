@@ -32,11 +32,13 @@ class VectorTest extends FunSuite {
   }
 
   test("foreach") {
+    val n = 33
+
     var ns = Vector.empty[Int]
-    for (i <- 0 until 15) ns = ns.append(i)
+    for (i <- 0 until n) ns = ns.append(i)
     var lst = List.empty[Int]
     ns.foreach { i => lst = i :: lst }
-    assert(lst === (0 until 15).reverse.toList)
+    assert(lst === (0 until n).reverse.toList)
   }
 
   test("map") {
