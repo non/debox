@@ -15,6 +15,7 @@ class VectorBenchmarks extends MyBenchmark {
   var data:Array[Int] = null
   var sv:scala.collection.immutable.Vector[Int] = null
   var dv:debox.vector.Vector[Int] = null
+  var iv:debox.vector.IntVector = null
 
   override protected def setUp() {
     val n = scala.math.pow(2, pow).toInt
@@ -23,10 +24,12 @@ class VectorBenchmarks extends MyBenchmark {
     var i = 0
     sv = scala.collection.immutable.Vector.empty[Int]
     dv = debox.vector.Vector.empty[Int]
+    iv = debox.vector.IntVector.empty
     while (i < n) {
       val z = data(i)
       sv = sv :+ z
       dv = dv.append(z)
+      iv = iv.append(z)
       i += 1
     }
   }
@@ -53,6 +56,17 @@ class VectorBenchmarks extends MyBenchmark {
     v.length
   }
 
+  def timeIntAppend(reps:Int) = run(reps) {
+    var i = 0
+    val n = data.length
+    var v = debox.vector.IntVector.empty
+    while (i < n) {
+      v = v.append(data(i))
+      i += 1
+    }
+    v.length
+  }
+
   def timeScalaForeach(reps:Int) = run(reps) {
     var total = 0
     sv.foreach { total += _ }
@@ -65,6 +79,12 @@ class VectorBenchmarks extends MyBenchmark {
     total
   }
 
+  def timeIntForeach(reps:Int) = run(reps) {
+    var total = 0
+    iv.foreach { total += _ }
+    total
+  }
+
   def timeScalaMap(reps:Int) = run(reps) {
     val v = sv.map(_ * -1.0)
     v.length
@@ -72,6 +92,11 @@ class VectorBenchmarks extends MyBenchmark {
 
   def timeDeboxMap(reps:Int) = run(reps) {
     val v = dv.map(_ * -1.0)
+    v.length
+  }
+
+  def timeIntMap(reps:Int) = run(reps) {
+    val v = iv.map(_ * -1)
     v.length
   }
 }
