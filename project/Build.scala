@@ -6,19 +6,19 @@ object MyBuild extends Build {
     name := "Debox",
     version := "0.1.0",
     //scalaVersion := "2.9.2",
-    scalaVersion := "2.10.0-M5",
+    scalaVersion := "2.10.0-M6",
 
     scalacOptions ++= Seq(
       "-Yinline-warnings",
       "-deprecation",
-      "-unchecked",
-      "-optimize"
+      //"-optimize",
+      "-unchecked"
     ),
 
     libraryDependencies ++= Seq(
       //"org.scalatest" %% "scalatest" % "1.7.2" % "test"
-      "org.scalatest" % "scalatest_2.10.0-M5" % "1.9-2.10.0-M5-B1" % "test",
-      "org.scala-lang" % "scala-reflect" % "2.10.0-M5"
+      "org.scalatest" % "scalatest_2.10.0-M6" % "1.9-2.10.0-M6-B2" % "test",
+      "org.scala-lang" % "scala-reflect" % "2.10.0-M6"
     )
   )
 
