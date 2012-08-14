@@ -6,11 +6,11 @@ import debox.buffer.Buffer
 import scala.{specialized => spec}
 
 object Set {
-  def empty[@spec A:Manifest:Unset:Hash] = new Set(Buckets.ofDim[A](8), 0, 8)
+  def empty[@spec(Int, Long, Double, AnyRef) A:Manifest:Unset:Hash] = new Set(Buckets.ofDim[A](8), 0, 8)
 
-  def apply[@spec A:Manifest:Unset:Hash]():Set[A] = empty[A]
+  def apply[@spec(Int, Long, Double, AnyRef) A:Manifest:Unset:Hash]():Set[A] = empty[A]
 
-  def apply[@spec A:Manifest:Unset:Hash](as:Array[A]) = {
+  def apply[@spec(Int, Long, Double, AnyRef) A:Manifest:Unset:Hash](as:Array[A]) = {
     val len = as.length
     val sz = size(len)
     val s = new Set(Buckets.ofDim[A](sz), 0, sz)
@@ -22,7 +22,7 @@ object Set {
     s
   }
 
-  def apply[@spec A:Manifest:Unset:Hash](as:Buffer[A]) = {
+  def apply[@spec(Int, Long, Double, AnyRef) A:Manifest:Unset:Hash](as:Buffer[A]) = {
     val len = as.length
     val sz = size(len)
     val s = new Set(Buckets.ofDim[A](sz), len, sz)
@@ -46,7 +46,7 @@ object Set {
   }
 }
 
-final class Set[@spec A:Manifest:Unset:Hash] protected[debox] (as:Buckets[A], n:Int, s:Int) extends Function1[A, Boolean] {
+final class Set[@spec(Int, Long, Double, AnyRef) A:Manifest:Unset:Hash] protected[debox] (as:Buckets[A], n:Int, s:Int) extends Function1[A, Boolean] {
 
   // set internals
   var buckets:Buckets[A] = as // buckets to store things in
@@ -114,7 +114,7 @@ final class Set[@spec A:Manifest:Unset:Hash] protected[debox] (as:Buckets[A], n:
 
   def toBuffer:Buffer[A] = debox.buffer.Mutable.unsafe(toArray)
 
-  final def map[@spec B:Manifest:Unset:Hash](f:A => B):Set[B] = {
+  final def map[@spec(Int, Long, Double, AnyRef) B:Manifest:Unset:Hash](f:A => B):Set[B] = {
     val set = new Set(Buckets.ofDim[B](size), 0, size)
     foreach(a => set.add(f(a)))
     set

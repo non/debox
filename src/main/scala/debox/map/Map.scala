@@ -6,13 +6,13 @@ import debox.buffer.Buffer
 import scala.{specialized => spec}
 
 object Map {
-  def empty[@spec A:Manifest:Unset:Hash, @spec B:Manifest] = {
+  def empty[@spec(Int, Long, Double, AnyRef) A:Manifest:Unset:Hash, @spec(Int, Long, Double, AnyRef) B:Manifest] = {
     new Map(Buckets.ofDim[A](8), Array.ofDim[B](8), 0, 8)
   }
 
-  def apply[@spec A:Manifest:Unset:Hash, @spec B:Manifest]() = empty[A, B]
+  def apply[@spec(Int, Long, Double, AnyRef) A:Manifest:Unset:Hash, @spec(Int, Long, Double, AnyRef) B:Manifest]() = empty[A, B]
 
-  def apply[@spec A:Manifest:Unset:Hash, @spec B:Manifest](ks:Array[A], vs:Array[B]) = {
+  def apply[@spec(Int, Long, Double, AnyRef) A:Manifest:Unset:Hash, @spec(Int, Long, Double, AnyRef) B:Manifest](ks:Array[A], vs:Array[B]) = {
     val len = ks.length
     val sz = size(len)
     val map = new Map(Buckets.ofDim[A](sz), Array.ofDim[B](sz), 0, sz)
@@ -21,7 +21,7 @@ object Map {
     map
   }
 
-  def apply[@spec A:Manifest:Unset:Hash, @spec B:Manifest](items:(A, B)*) = {
+  def apply[@spec(Int, Long, Double, AnyRef) A:Manifest:Unset:Hash, @spec(Int, Long, Double, AnyRef) B:Manifest](items:(A, B)*) = {
     val len = items.length
     val sz = size(len)
     val map = new Map(Buckets.ofDim[A](sz), Array.ofDim[B](sz), 0, sz)
@@ -47,7 +47,7 @@ object Map {
   }
 }
 
-final class Map[@spec A:Manifest:Hash, @spec B:Manifest] protected[debox] (ks:Buckets[A], vs:Array[B], n:Int, s:Int) extends Function1[A, B] {
+final class Map[@spec(Int, Long, Double, AnyRef) A:Manifest:Hash, @spec(Int, Long, Double, AnyRef) B:Manifest] protected[debox] (ks:Buckets[A], vs:Array[B], n:Int, s:Int) extends Function1[A, B] {
 
   // set internals
   var keys:Buckets[A] = ks // keys track set/unset
@@ -81,7 +81,7 @@ final class Map[@spec A:Manifest:Hash, @spec B:Manifest] protected[debox] (ks:Bu
 
   final def copy:Map[A, B] = new Map(keys.copy, vals.clone, len, size)
 
-  final def mapToArray[@spec C:Manifest](f:(A, B) => C):Array[C] = {
+  final def mapToArray[@spec(Int, Long, Double, AnyRef) C:Manifest](f:(A, B) => C):Array[C] = {
     var j = 0
     val limit = len
     val arr = Array.ofDim[C](limit)
@@ -89,7 +89,7 @@ final class Map[@spec A:Manifest:Hash, @spec B:Manifest] protected[debox] (ks:Bu
     arr
   }
 
-  final def mapToMap[@spec C:Manifest:Hash, @spec D:Manifest](k:A => C, v:B => D):Map[C, D] = {
+  final def mapToMap[@spec(Int, Long, Double, AnyRef) C:Manifest:Hash, @spec(Int, Long, Double, AnyRef) D:Manifest](k:A => C, v:B => D):Map[C, D] = {
     val ks = Buckets.ofDim[C](size)
     val vs = Array.ofDim[D](size)
     keys.foreachIndex {
