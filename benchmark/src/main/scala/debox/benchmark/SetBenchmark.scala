@@ -44,20 +44,20 @@ class SetBenchmarks extends MyBenchmark {
   def timeBuildMarkedSet(reps:Int) = run(reps)(buildMarkedSet)
   def timeBuildBitmaskSet(reps:Int) = run(reps)(buildBitmaskSet)
   
-  //// foreach benchmark
-  //def timeForeachScalaSet(reps:Int) = run(reps)(foreachScalaSet)
-  //def timeForeachMarkedSet(reps:Int) = run(reps)(foreachMarkedSet)
-  //def timeForeachBitmaskSet(reps:Int) = run(reps)(foreachBitmaskSet)
+  // foreach benchmark
+  def timeForeachScalaSet(reps:Int) = run(reps)(foreachScalaSet)
+  def timeForeachMarkedSet(reps:Int) = run(reps)(foreachMarkedSet)
+  def timeForeachBitmaskSet(reps:Int) = run(reps)(foreachBitmaskSet)
   
   // contains benchmark
   def timeContainsScalaSet(reps:Int) = run(reps)(containsScalaSet)
   def timeContainsMarkedSet(reps:Int) = run(reps)(containsMarkedSet)
   def timeContainsBitmaskSet(reps:Int) = run(reps)(containsBitmaskSet)
   
-  //// map benchmark
-  //def timeMapScalaSet(reps:Int) = run(reps)(mapScalaSet)
-  //def timeMapMarkedSet(reps:Int) = run(reps)(mapMarkedSet)
-  //def timeMapBitmaskSet(reps:Int) = run(reps)(mapBitmaskSet)
+  // map benchmark
+  def timeMapScalaSet(reps:Int) = run(reps)(mapScalaSet)
+  def timeMapMarkedSet(reps:Int) = run(reps)(mapMarkedSet)
+  def timeMapBitmaskSet(reps:Int) = run(reps)(mapBitmaskSet)
 
   // building benchmark
   def buildScalaSet:Int = {

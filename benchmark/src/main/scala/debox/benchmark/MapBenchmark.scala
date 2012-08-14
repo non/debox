@@ -19,10 +19,6 @@ class MapBenchmarks extends MyBenchmark {
   var keys:Array[Int] = null
   var vals:Array[Double] = null
 
-  //var scalaMap:mutable.Map[Int, Double] = null
-  //var markedMap:set.Map[Int, Double] = null
-  //var bitmaskMap:set.Map[Int, Double] = null
-
   def mf[A](implicit ev:Manifest[A]) = ev
   def marked[A](a:A) = MarkedUnset(a)
 
@@ -38,7 +34,6 @@ class MapBenchmarks extends MyBenchmark {
   def timeBuildMarkedMap(reps:Int) = run(reps)(buildMarkedMap)
   def timeBuildBitmaskMap(reps:Int) = run(reps)(buildBitmaskMap)
   
-  // building benchmark
   def buildScalaMap:Int = {
     val m = mutable.Map.empty[Int, Double]
     var i = 0
