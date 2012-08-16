@@ -5,20 +5,22 @@ object MyBuild extends Build {
   override lazy val settings = super.settings ++ Seq(
     name := "Debox",
     version := "0.1.0",
-    //scalaVersion := "2.9.2",
     scalaVersion := "2.10.0-M6",
 
+    //scalaHome := Some(file("/Users/erik/w/scala/build/pack")),
+
     scalacOptions ++= Seq(
+      //"-Xlog-free-terms",
       "-Yinline-warnings",
       "-deprecation",
-      //"-optimize",
+      "-optimize",
       "-unchecked"
     ),
 
     libraryDependencies ++= Seq(
+      "org.scala-lang" % "scala-reflect" % "2.10.0-M6",
       //"org.scalatest" %% "scalatest" % "1.7.2" % "test"
-      "org.scalatest" % "scalatest_2.10.0-M6" % "1.9-2.10.0-M6-B2" % "test",
-      "org.scala-lang" % "scala-reflect" % "2.10.0-M6"
+      "org.scalatest" % "scalatest_2.10.0-M6" % "1.9-2.10.0-M6-B2" % "test"
     )
   )
 
