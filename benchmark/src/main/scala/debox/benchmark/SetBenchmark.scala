@@ -13,7 +13,7 @@ object SetBenchmarks extends MyRunner(classOf[SetBenchmarks])
 
 class SetBenchmarks extends MyBenchmark {
   //@Param(Array("8", "11", "14", "17", "20"))
-  @Param(Array("17"))
+  @Param(Array("8", "11", "14", "17"))
   var pow:Int = 0
 
   var data:Array[Long] = null
