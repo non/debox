@@ -7,7 +7,7 @@ import scala.{specialized => spec}
 import language.experimental.macros
 
 import scala.reflect.{ClassTag, TypeTag}
-import scala.reflect.makro.Context
+import scala.reflect.macros.Context
 
 object Util {
   def alloc[@spec A:ClassTag](src:Array[A], s1:Int, len:Int) = {
