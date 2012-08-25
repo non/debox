@@ -1,5 +1,7 @@
 package debox
 
+import scala.reflect.ClassTag
+
 import scala.{specialized => spec}
 
 /**
@@ -103,16 +105,16 @@ sealed trait Buckets[@spec A] {
    *
    * Buckets which are unset in this object will be unset in the result.
    */
-  def map[@spec B:Manifest:Unset](f:A => B): Buckets[B]
+  def map[@spec B:ClassTag:Unset](f:A => B): Buckets[B]
 }
 
 /**
  * The Buckets object provides some useful factory methods.
  */
 object Buckets {
-  final def empty[@spec A:Unset:Manifest]: Buckets[A] = Buckets.ofDim[A](8)
+  final def empty[@spec A:Unset:ClassTag]: Buckets[A] = Buckets.ofDim[A](8)
 
-  final def ofDim[@spec A:Unset:Manifest](n:Int): Buckets[A] = Unset[A] match {
+  final def ofDim[@spec A:Unset:ClassTag](n:Int): Buckets[A] = Unset[A] match {
     case MarkedUnset(mark) => new MarkedBuckets(Array.fill(n)(mark), mark)
     case NoUnset => new BitmaskBuckets(Array.ofDim[A](n), Array.ofDim[Int]((n + 31) >> 5))
   }
@@ -157,7 +159,7 @@ final class MarkedBuckets[@spec A] protected[debox] (as:Array[A], mark:A) extend
     null.asInstanceOf[A]
   }
 
-  final def map[@spec B:Manifest:Unset](f:A => B): Buckets[B] = {
+  final def map[@spec B:ClassTag:Unset](f:A => B): Buckets[B] = {
     val buckets = Buckets.empty[B]
     var i = 0
     val len = length
@@ -300,7 +302,7 @@ final class BitmaskBuckets[@spec A] protected[debox] (as:Array[A], mask:Array[In
     null.asInstanceOf[A]
   }
 
-  final def map[@spec B:Manifest:Unset](f:A => B): Buckets[B] = {
+  final def map[@spec B:ClassTag:Unset](f:A => B): Buckets[B] = {
     val buckets = Buckets.empty[B]
     var i = 0
     val len = length

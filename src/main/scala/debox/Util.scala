@@ -10,7 +10,7 @@ import scala.reflect.{ClassTag, TypeTag}
 import scala.reflect.makro.Context
 
 object Util {
-  def alloc[@spec A:Manifest](src:Array[A], s1:Int, len:Int) = {
+  def alloc[@spec A:ClassTag](src:Array[A], s1:Int, len:Int) = {
     val as = Array.ofDim[A](len)
     System.arraycopy(src, s1, as, 0, len)
     as
@@ -37,7 +37,7 @@ object Util {
    *     arr
    *   }
    */
-  def arrayMacro[A:c.TypeTag](c:Context)(as:c.Expr[A]*)(ct:c.Expr[ClassTag[A]]): c.Expr[Array[A]] = {
+  def arrayMacro[A:c.AbsTypeTag](c:Context)(as:c.Expr[A]*)(ct:c.Expr[ClassTag[A]]): c.Expr[Array[A]] = {
     import c.mirror._
     import c.universe._
     def const(x:Int) = Literal(Constant(x))
@@ -46,7 +46,8 @@ object Util {
     val arr = newTermName("arr")
 
     val create = Apply(Select(ct.tree, "newArray"), List(const(n)))
-    val valdef = ValDef(Modifiers(), arr, TypeTree(typeOf[Array[A]]), create)
+    val arrtpe = TypeTree(implicitly[c.AbsTypeTag[Array[A]]].tpe)
+    val valdef = ValDef(Modifiers(), arr, arrtpe, create)
 
     val updates = (0 until n).map {
       i => Apply(Select(Ident(arr), "update"), List(const(i), as(i).tree))

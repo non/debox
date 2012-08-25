@@ -1,12 +1,14 @@
 package debox.set
 
+import scala.reflect.ClassTag
+
 import debox._
 
 import org.scalatest.FunSuite
 
 class SetTest extends FunSuite {
 
-  def m[A](implicit ev:Manifest[A]) = ev
+  def m[A](implicit ev:ClassTag[A]) = ev
   def n = NoUnset
   def u[A](a:A) = MarkedUnset[A](a)
   def h[A](implicit ev:Hash[A]) = ev

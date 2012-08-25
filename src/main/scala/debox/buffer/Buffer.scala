@@ -1,11 +1,13 @@
 package debox.buffer
 
+import scala.reflect.ClassTag
+
 import annotation.tailrec
 import scala.math.{min, max}
 import scala.{specialized => spec}
 
 object Buffer {
-  def mapBufferToArray[@spec A, @spec B:Manifest](src:Buffer[A], s1:Int, len:Int)(f:A => B) = {
+  def mapBufferToArray[@spec A, @spec B:ClassTag](src:Buffer[A], s1:Int, len:Int)(f:A => B) = {
     val bs = Array.ofDim[B](len)
     var i = s1
     var j = 0
@@ -35,7 +37,7 @@ trait Buffer[@spec A] {
   def slice(i:Int, j:Int):Buffer[A]
   def reverse: Buffer[A]
 
-  def map[@spec B:Manifest](f:A => B): Buffer[B]
+  def map[@spec B:ClassTag](f:A => B): Buffer[B]
 
   def foreach(f:Function[A, Unit]): Unit = {
     var i = 0
