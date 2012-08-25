@@ -21,7 +21,7 @@ object Util {
    *
    * "As seen on scala-internals!"
    */
-  def array[A](as:A*)(implicit ct:ClassTag[A]) = macro arrayMacro[A]
+  def array[A](as:A*) = macro arrayMacro[A]
 
   /**
    * Takes in something like:
@@ -37,7 +37,7 @@ object Util {
    *     arr
    *   }
    */
-  def arrayMacro[A:c.AbsTypeTag](c:Context)(as:c.Expr[A]*)(ct:c.Expr[ClassTag[A]]): c.Expr[Array[A]] = {
+  def arrayMacro[A:c.AbsTypeTag](c:Context)(as:c.Expr[A]*): c.Expr[Array[A]] = {
     import c.mirror._
     import c.universe._
     def const(x:Int) = Literal(Constant(x))
@@ -45,7 +45,11 @@ object Util {
     val n = as.length
     val arr = newTermName("arr")
 
-    val create = Apply(Select(ct.tree, "newArray"), List(const(n)))
+    val mod = Ident(staticModule("scala.reflect.ClassTag"))
+    val att = implicitly[c.AbsTypeTag[A]]
+    val ct = Apply(mod, List(c.reifyRuntimeClass(att.tpe)))
+
+    val create = Apply(Select(ct, "newArray"), List(const(n)))
     val arrtpe = TypeTree(implicitly[c.AbsTypeTag[Array[A]]].tpe)
     val valdef = ValDef(Modifiers(), arr, arrtpe, create)
 
