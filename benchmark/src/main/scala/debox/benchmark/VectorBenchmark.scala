@@ -9,7 +9,8 @@ import com.google.caliper.Param
 object VectorBenchmarks extends MyRunner(classOf[VectorBenchmarks])
 
 class VectorBenchmarks extends MyBenchmark {
-  @Param(Array("8", "11", "14", "17", "20"))
+  //@Param(Array("8", "11", "14", "17", "20"))
+  @Param(Array("8", "11", "14"))
   var pow:Int = 0
 
   var data:Array[Int] = null
@@ -86,17 +87,74 @@ class VectorBenchmarks extends MyBenchmark {
   }
 
   def timeScalaMap(reps:Int) = run(reps) {
-    val v = sv.map(_ * -1.0)
+    val v = sv.map(_ * -1)
     v.length
   }
 
   def timeDeboxMap(reps:Int) = run(reps) {
-    val v = dv.map(_ * -1.0)
+    val v = dv.map(_ * -1)
     v.length
   }
 
   def timeIntMap(reps:Int) = run(reps) {
     val v = iv.map(_ * -1)
+    v.length
+  }
+
+  def timeScalaApply(reps:Int) = run(reps) {
+    var i = 0
+    val n = data.length
+    var sum = 0
+    while (i < n) { sum += sv(i); i += 1 }
+    sum
+  }
+
+  def timeDeboxApply(reps:Int) = run(reps) {
+    var i = 0
+    val n = data.length
+    var sum = 0
+    while (i < n) { sum += dv(i); i += 1 }
+    sum
+  }
+
+  def timeIntApply(reps:Int) = run(reps) {
+    var i = 0
+    val n = data.length
+    var sum = 0
+    while (i < n) { sum += iv(i); i += 1 }
+    sum
+  }
+
+  def timeScalaUpdated(reps:Int) = run(reps) {
+    var i = 0
+    val n = data.length
+    var v = sv
+    while (i < n) {
+      v = v.updated(i, data(i))
+      i += 1
+    }
+    v.length
+  }
+
+  def timeDeboxUpdated(reps:Int) = run(reps) {
+    var i = 0
+    val n = data.length
+    var v = sv
+    while (i < n) {
+      v = v.updated(i, data(i))
+      i += 1
+    }
+    v.length
+  }
+
+  def timeIntUpdated(reps:Int) = run(reps) {
+    var i = 0
+    val n = data.length
+    var v = iv
+    while (i < n) {
+      v = v.updated(i, data(i))
+      i += 1
+    }
     v.length
   }
 }
