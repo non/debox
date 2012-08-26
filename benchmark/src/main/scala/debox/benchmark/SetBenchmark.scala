@@ -1,5 +1,7 @@
 package debox.benchmark
 
+import scala.reflect.ClassTag
+
 import scala.{specialized => spec}
 import scala.collection.mutable
 import scala.util.Random._
@@ -18,11 +20,13 @@ class SetBenchmarks extends MyBenchmark {
 
   var data:Array[Long] = null
   var data2:Array[Long] = null
+
   var scalaSet:mutable.Set[Long] = null
+  var javaSet:java.util.HashSet[Long] = null
   var markedSet:set.Set[Long] = null
   var bitmaskSet:set.Set[Long] = null
 
-  val manifest = implicitly[Manifest[Long]]
+  val manifest = implicitly[ClassTag[Long]]
   val noUnset = NoUnset
   val markZero = MarkedUnset(0L)
   val hashLong = Hash.LongHash
@@ -35,12 +39,15 @@ class SetBenchmarks extends MyBenchmark {
     data2 = init(n / 10)(nextLong).map(n => if(n == 0L) n + 1 else n)
 
     scalaSet = mutable.Set(data:_*)
+    javaSet = new java.util.HashSet[Long]()
+    data.foreach { n => javaSet.add(n) }
     markedSet = set.Set(data)(manifest, markZero, hashLong)
     bitmaskSet = set.Set(data)(manifest, noUnset, hashLong)
   }
 
   // building benchmark
   def timeBuildScalaSet(reps:Int) = run(reps)(buildScalaSet)
+  def timeBuildJavaSet(reps:Int) = run(reps)(buildJavaSet)
   def timeBuildMarkedSet(reps:Int) = run(reps)(buildMarkedSet)
   def timeBuildBitmaskSet(reps:Int) = run(reps)(buildBitmaskSet)
   
@@ -51,6 +58,7 @@ class SetBenchmarks extends MyBenchmark {
   
   // contains benchmark
   def timeContainsScalaSet(reps:Int) = run(reps)(containsScalaSet)
+  def timeContainsJavaSet(reps:Int) = run(reps)(containsJavaSet)
   def timeContainsMarkedSet(reps:Int) = run(reps)(containsMarkedSet)
   def timeContainsBitmaskSet(reps:Int) = run(reps)(containsBitmaskSet)
   
@@ -62,6 +70,14 @@ class SetBenchmarks extends MyBenchmark {
   // building benchmark
   def buildScalaSet:Int = {
     val s = mutable.Set.empty[Long]
+    var i = 0
+    val len = data.length
+    while (i < len) { s.add(data(i)); i += 1 }
+    s.size
+  }
+
+  def buildJavaSet:Int = {
+    val s = new java.util.HashSet[Long]
     var i = 0
     val len = data.length
     while (i < len) { s.add(data(i)); i += 1 }
@@ -115,6 +131,17 @@ class SetBenchmarks extends MyBenchmark {
     t
   }
 
+  def containsJavaSet:Long = {
+    var i = 0
+    var len = data.length
+    var t = 0
+    while (i < len) { if (javaSet.contains(data(i))) t += 1; i += 1 }
+    i = 0
+    len = data2.length
+    while (i < len) { if (javaSet.contains(data2(i))) t += 1; i += 1 }
+    t
+  }
+
   def containsMarkedSet:Long = {
     var i = 0
     var len = data.length
@@ -138,7 +165,7 @@ class SetBenchmarks extends MyBenchmark {
   }
 
   // map
-  val ms = implicitly[Manifest[Int]]
+  val ms = implicitly[ClassTag[Int]]
 
   def mapScalaSet = scalaSet.map(_.toInt + 3)
   def mapMarkedSet = markedSet.map(_.toInt + 3)(ms, MarkedUnset(0), Hash.IntHash)
