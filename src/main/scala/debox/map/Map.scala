@@ -4,6 +4,7 @@ import scala.reflect.ClassTag
 
 import debox._
 import debox.buffer.Buffer
+import debox.set.Set
 
 import scala.{specialized => spec}
 
@@ -85,21 +86,24 @@ final class Map[@spec(Int, Long, Double, AnyRef) A:ClassTag:Hash, @spec(Int, Lon
 
   final def mapToArray[@spec(Int, Long, Double, AnyRef) C:ClassTag](f:(A, B) => C):Array[C] = {
     var j = 0
-    val limit = len
-    val arr = Array.ofDim[C](limit)
-    keys.foreachIndex(i => arr(j) = f(keys(i), vals(i)))
+    val arr = Array.ofDim[C](len)
+    keys.foreachIndex {
+      i => arr(j) = f(keys(i), vals(i))
+      j += 1
+    }
     arr
   }
 
+  final def mapToSet[@spec(Int, Long, Double, AnyRef) C:ClassTag:Unset:Hash](f:(A, B) => C):Set[C] = {
+    val s = Set.empty[C]
+    keys.foreachIndex(i => s.add(f(keys(i), vals(i))))
+    s
+  }
+
   final def mapToMap[@spec(Int, Long, Double, AnyRef) C:ClassTag:Hash, @spec(Int, Long, Double, AnyRef) D:ClassTag](k:A => C, v:B => D):Map[C, D] = {
-    val ks = Buckets.ofDim[C](size)
-    val vs = Array.ofDim[D](size)
-    keys.foreachIndex {
-      i =>
-      ks(i) = k(keys(i))
-      vs(i) = v(vals(i))
-    }
-    new Map(ks, vs, len, size)
+    val m = Map.empty[C, D]
+    keys.foreachIndex(i => m(k(keys(i))) = v(vals(i)))
+    m
   }
 
   final def foreach(f:(A, B) => Unit) { keys.foreachIndex(i => f(keys(i), vals(i))) }
@@ -176,7 +180,7 @@ final class Map[@spec(Int, Long, Double, AnyRef) A:ClassTag:Hash, @spec(Int, Lon
       // if this index is empty, or equal to our value already
       val slot = keys(j)
       if (keys.isUnset(j, slot)) sys.error("key %s not found" format key)
-      if (slot == key) return vals(i)
+      if (slot == key) return vals(j)
     
       // otherwise, find a new index to try
       i = (i << 2) + i + perturbation + 1
@@ -185,6 +189,10 @@ final class Map[@spec(Int, Long, Double, AnyRef) A:ClassTag:Hash, @spec(Int, Lon
     
     // should never happen
     null.asInstanceOf[B]
+  }
+
+  final def get(key:A):Option[B] = {
+    if (contains(key)) Some(apply(key)) else None
   }
 
   final protected[this] def resize():A = {
