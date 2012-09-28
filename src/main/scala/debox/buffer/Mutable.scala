@@ -22,7 +22,17 @@ final class Mutable[@spec A:ClassTag](as:Array[A], n:Int) extends Buffer[A] {
   def length = len
   def toArray = Util.alloc(elems, 0, len)
   def slice(i:Int, j:Int) = Mutable.unsafe(Util.alloc(elems, i, j - i))
-  def reverse = Mutable.unsafe(as.reverse)
+  def reverse = {
+    val as = new Array[A](elems.length)
+    var i = 0
+    var j = len - 1
+    val limit = len
+    while (i < limit) {
+      as(j) = elems(i)
+      i += 1
+      j -= 1
+    }
+  }
   def map[@spec B:ClassTag](f:A => B) = Mutable.unsafe(as.map(f))
   def apply(i:Int) = elems(i)
   def get(i:Int) = if (i < len) Some(elems(i)) else None
