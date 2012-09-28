@@ -43,7 +43,7 @@ class BufferBenchmarks extends MyBenchmark {
     total
   }
 
-  def appendSpireBuffer:Long = {
+  def appendDeboxBuffer:Long = {
     val len = data.length
     val bf = debox.buffer.Mutable.empty[Long]
     var i = 0
@@ -67,7 +67,7 @@ class BufferBenchmarks extends MyBenchmark {
     total
   }
 
-  def foreachSpireBuffer:Long = {
+  def foreachDeboxBuffer:Long = {
     var i = 0
     var total = 0L
     sbuf.foreach(total += _)
@@ -92,7 +92,7 @@ class BufferBenchmarks extends MyBenchmark {
     total
   }
 
-  def whileSpireBuffer:Long = {
+  def whileDeboxBuffer:Long = {
     var i = 0
     val len = sbuf.length
     var total = 0L
@@ -115,13 +115,13 @@ class BufferBenchmarks extends MyBenchmark {
   }
 
   def timeAppendArrayBuffer(reps:Int) = run(reps)(appendArrayBuffer)
-  def timeAppendSpireBuffer(reps:Int) = run(reps)(appendSpireBuffer)
+  def timeAppendDeboxBuffer(reps:Int) = run(reps)(appendDeboxBuffer)
 
   def timeForeachArrayBuffer(reps:Int) = run(reps)(foreachArrayBuffer)
-  def timeForeachSpireBuffer(reps:Int) = run(reps)(foreachSpireBuffer)
+  def timeForeachDeboxBuffer(reps:Int) = run(reps)(foreachDeboxBuffer)
   def timeForeachArray(reps:Int) = run(reps)(foreachArray)
 
   def timeWhileArrayBuffer(reps:Int) = run(reps)(whileArrayBuffer)
-  def timeWhileSpireBuffer(reps:Int) = run(reps)(whileSpireBuffer)
+  def timeWhileDeboxBuffer(reps:Int) = run(reps)(whileDeboxBuffer)
   def timeWhileArray(reps:Int) = run(reps)(whileArray)
 }
