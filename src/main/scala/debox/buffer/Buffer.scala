@@ -8,7 +8,7 @@ import scala.{specialized => spec}
 
 object Buffer {
   def mapBufferToArray[@spec A, @spec B:ClassTag](src:Buffer[A], s1:Int, len:Int)(f:A => B) = {
-    val bs = Array.ofDim[B](len)
+    val bs = new Array[B](len)
     var i = s1
     var j = 0
     var k = s1 + len

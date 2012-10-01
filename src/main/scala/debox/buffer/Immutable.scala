@@ -13,7 +13,7 @@ object Immutable {
   def unsafe[@spec A:ClassTag](as:Array[A]) = new Forward(as, 0, as.length)
   def apply[@spec A:ClassTag](as:Array[A]) = unsafe(as)
   def empty[@spec A:ClassTag] = unsafe(Array.empty[A])
-  def ofDim[@spec A:ClassTag](n:Int) = unsafe(Array.ofDim[A](n))
+  def ofDim[@spec A:ClassTag](n:Int) = unsafe(new Array[A](n))
   def fill[@spec A:ClassTag](n:Int)(a:A) = unsafe(Array.fill(n)(a))
 }
 
@@ -41,7 +41,7 @@ final class Forward[@spec A](elems:Array[A], start:Int, end:Int)(implicit val ma
 final class Reversed[@spec A](elems:Array[A], start:Int, end:Int)(implicit val manifest:ClassTag[A]) extends Immutable[A] {
   @inline final def index(i:Int) = end - 1 - i
   def toArray = {
-    val as = Array.ofDim[A](length)
+    val as = new Array[A](length)
     var i = index(0)
     var j = 0
     while (i >= start) {

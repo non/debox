@@ -3,7 +3,7 @@ import sbt.Keys._
 
 object MyBuild extends Build {
   override lazy val settings = super.settings ++ Seq(
-    name := "Debox",
+    name := "debox",
     version := "0.1.0",
     scalaVersion := "2.10.0-M7",
 
@@ -26,7 +26,7 @@ object MyBuild extends Build {
 
   val key = AttributeKey[Boolean]("javaOptionsPatched")
 
-  lazy val root = Project("root", file("."))
+  lazy val root = Project("debox", file("."))
 
   lazy val benchmark: Project = Project("benchmark", file("benchmark")) settings (benchmarkSettings: _*) dependsOn (root)
 

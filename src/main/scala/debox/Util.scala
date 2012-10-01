@@ -11,7 +11,7 @@ import scala.reflect.macros.Context
 
 object Util {
   def alloc[@spec A:ClassTag](src:Array[A], s1:Int, len:Int) = {
-    val as = Array.ofDim[A](len)
+    val as = new Array[A](len)
     System.arraycopy(src, s1, as, 0, len)
     as
   }

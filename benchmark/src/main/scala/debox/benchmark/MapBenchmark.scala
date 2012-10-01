@@ -13,8 +13,8 @@ import debox.set
 object MapBenchmarks extends MyRunner(classOf[MapBenchmarks])
 
 class MapBenchmarks extends MyBenchmark {
-  //@Param(Array("8", "11", "14", "17", "20"))
-  @Param(Array("8", "11", "14", "17"))
+  //@Param(Array("8", "11", "14", "17"))
+  @Param(Array("4", "6", "8"))
   var pow:Int = 0
 
   var keys:Array[Int] = null

@@ -11,13 +11,15 @@ object Mutable {
   def unsafe[@spec A:ClassTag](as:Array[A]) = new Mutable(as, as.length)
   def apply[@spec A:ClassTag](as:Array[A]) = unsafe(as)
   def empty[@spec A:ClassTag] = unsafe(Array.empty[A])
-  def ofDim[@spec A:ClassTag](n:Int) = unsafe(Array.ofDim[A](n))
+  def ofDim[@spec A:ClassTag](n:Int) = unsafe(new Array[A](n))
   def fill[@spec A:ClassTag](n:Int)(a:A) = unsafe(Array.fill(n)(a))
 }
 
 final class Mutable[@spec A:ClassTag](as:Array[A], n:Int) extends Buffer[A] {
   protected[this] var elems:Array[A] = as
   protected[this] var len:Int = n
+
+  def unsafeArray = elems
 
   def length = len
   def toArray = Util.alloc(elems, 0, len)
@@ -32,6 +34,7 @@ final class Mutable[@spec A:ClassTag](as:Array[A], n:Int) extends Buffer[A] {
       i += 1
       j -= 1
     }
+    Mutable(as)
   }
   def map[@spec B:ClassTag](f:A => B) = Mutable.unsafe(as.map(f))
   def apply(i:Int) = elems(i)
@@ -46,7 +49,7 @@ final class Mutable[@spec A:ClassTag](as:Array[A], n:Int) extends Buffer[A] {
     val x = elems.length
     if (len + n > x) {
       val x2 = if (x < 4) 8 else if (x <= 0x3fffffff) x * 2 else Int.MaxValue
-      val as = Array.ofDim[A](x2)
+      val as = new Array[A](x2)
       System.arraycopy(elems, 0, as, 0, len)
       elems = as
     }

@@ -10,7 +10,7 @@ import scala.{specialized => spec}
 
 object Map {
   def empty[@spec(Int, Long, Double, AnyRef) A:ClassTag:Unset:Hash, @spec(Int, Long, Double, AnyRef) B:ClassTag] = {
-    new Map(Buckets.ofDim[A](8), Array.ofDim[B](8), 0, 8)
+    new Map(Buckets.ofDim[A](8), new Array[B](8), 0, 8)
   }
 
   def apply[@spec(Int, Long, Double, AnyRef) A:ClassTag:Unset:Hash, @spec(Int, Long, Double, AnyRef) B:ClassTag]() = empty[A, B]
@@ -18,7 +18,7 @@ object Map {
   def apply[@spec(Int, Long, Double, AnyRef) A:ClassTag:Unset:Hash, @spec(Int, Long, Double, AnyRef) B:ClassTag](ks:Array[A], vs:Array[B]) = {
     val len = ks.length
     val sz = size(len)
-    val map = new Map(Buckets.ofDim[A](sz), Array.ofDim[B](sz), 0, sz)
+    val map = new Map(Buckets.ofDim[A](sz), new Array[B](sz), 0, sz)
     var i = 0
     while (i < len) { map(ks(i)) = vs(i); i += 1 }
     map
@@ -27,7 +27,7 @@ object Map {
   def apply[@spec(Int, Long, Double, AnyRef) A:ClassTag:Unset:Hash, @spec(Int, Long, Double, AnyRef) B:ClassTag](items:(A, B)*) = {
     val len = items.length
     val sz = size(len)
-    val map = new Map(Buckets.ofDim[A](sz), Array.ofDim[B](sz), 0, sz)
+    val map = new Map(Buckets.ofDim[A](sz), new Array[B](sz), 0, sz)
     var i = 0
     while (i < len) {
       val (k, v) = items(i)
@@ -86,7 +86,7 @@ final class Map[@spec(Int, Long, Double, AnyRef) A:ClassTag:Hash, @spec(Int, Lon
 
   final def mapToArray[@spec(Int, Long, Double, AnyRef) C:ClassTag](f:(A, B) => C):Array[C] = {
     var j = 0
-    val arr = Array.ofDim[C](len)
+    val arr = new Array[C](len)
     keys.foreachIndex {
       i => arr(j) = f(keys(i), vals(i))
       j += 1
@@ -201,7 +201,7 @@ final class Map[@spec(Int, Long, Double, AnyRef) A:ClassTag:Hash, @spec(Int, Lon
     val nextsize = size * factor
     val nextmask = nextsize - 1
     val nextkeys = Buckets.ofDim[A](nextsize)
-    val nextvals = Array.ofDim[B](nextsize)
+    val nextvals = new Array[B](nextsize)
     
     var i = 0
     var count = 0

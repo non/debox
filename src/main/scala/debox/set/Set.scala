@@ -105,7 +105,7 @@ final class Set[@spec(Int, Long, Double, AnyRef) A:ClassTag:Unset:Hash] protecte
   
   def toArray:Array[A] = {
     var i = 0
-    val arr = Array.ofDim[A](length)
+    val arr = new Array[A](length)
     foreach {
       a =>
       arr(i) = a

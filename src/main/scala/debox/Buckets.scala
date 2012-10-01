@@ -116,7 +116,7 @@ object Buckets {
 
   final def ofDim[@spec A:Unset:ClassTag](n:Int): Buckets[A] = Unset[A] match {
     case MarkedUnset(mark) => new MarkedBuckets(Array.fill(n)(mark), mark)
-    case NoUnset => new BitmaskBuckets(Array.ofDim[A](n), Array.ofDim[Int]((n + 31) >> 5))
+    case NoUnset => new BitmaskBuckets(new Array[A](n), new Array[Int]((n + 31) >> 5))
   }
 }
 
