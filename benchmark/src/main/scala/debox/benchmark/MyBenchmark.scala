@@ -2,6 +2,8 @@ package debox.benchmark
 
 import com.google.caliper.{Benchmark, Param, SimpleBenchmark, Runner}
 
+import scala.reflect.ClassTag
+
 /**
  * Objects extending Runner will inherit a Caliper-compatible main method.
  */
@@ -14,7 +16,7 @@ abstract class MyRunner(cls:java.lang.Class[_ <: Benchmark]) {
  */
 trait MyBenchmark extends SimpleBenchmark {
   // Sugar for building arrays using a per-cell init function.
-  def init[A:Manifest](size:Int)(init: => A) = {
+  def init[A:ClassTag](size:Int)(init: => A) = {
     val data = Array.ofDim[A](size)
     for (i <- 0 until size) data(i) = init
     data
