@@ -7,7 +7,6 @@ import scala.math.round
 import org.scalatest.FunSuite
 
 class MapTest extends FunSuite {
-
   test("apply") {
     val m = Map.empty[Int, Int]
     assert(m.contains(2) === false)
@@ -43,43 +42,39 @@ class MapTest extends FunSuite {
     assert(m.length === 1)
   }
 
-  test("mapToMap") {
-    val m = Map.empty[Int, Int]
-    m(1) = 1
-    m(2) = 2
-    val mm = m.mapToMap(_ * 10, _.toString * 3)
-    assert(mm.length === 2)
-    assert(mm(10) === "111")
-    assert(mm(20) === "222")
-  }
-
-  test("mapToSet") {
+  test("resize/remove") {
     val m = Map.empty[Int, Double]
-    m(1) = 2.0
-    m(2) = 2.4
-    m(3) = 2.5
-    m(4) = 2.9
-    val s = m.mapToSet((k,v) => round(v))
-    assert(s.length === 2)
-    assert(s(2))
-    assert(s(3))
-  }
-
-  test("mapToArray") {
-    val m = Map.empty[Int, Int]
-    m(1) = 1
-    m(2) = 2
-    m(3) = 2
-    m(4) = 2
-    m(5) = 2
-    val arr = m.mapToArray((k,v) => k % 3)
-    assert(arr.contains(0))
-    assert(arr.contains(1))
-    assert(arr.contains(2))
-  }
-
-  test("toString") {
-    assert(Map.empty[Int, Int].toString === "Map()")
-    assert(Map(1 -> 2.0).toString === "Map(1 -> 2.0)")
+    assert(m.length === 0)
+    assert(m.contains(9) === false)
+    assert(m.contains(11) === false)
+    assert(m.contains(100) === false)
+    for (i <- 0 until 100) {
+      m(i) = i.toDouble * 7
+    }
+    assert(m.length === 100)
+    assert(m(9) === 63.0)
+    assert(m(11) === 77.0)
+    assert(m.contains(100) === false)
+    for (i <- 0 until 100) {
+      m.remove(i)
+    }
+    assert(m.length === 0)
+    assert(m.contains(9) === false)
+    assert(m.contains(11) === false)
+    assert(m.contains(100) === false)
+    for (i <- 0 until 100) {
+      m(i) = i.toDouble * 9
+    }
+    assert(m.length === 100)
+    assert(m(9) === 81.0)
+    assert(m(11) === 99.0)
+    assert(m.contains(100) === false)
+    for (i <- 0 until 100) {
+      m.remove(i)
+    }
+    assert(m.length === 0)
+    assert(m.contains(9) === false)
+    assert(m.contains(11) === false)
+    assert(m.contains(100) === false)
   }
 }

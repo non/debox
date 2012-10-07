@@ -7,8 +7,6 @@ object MyBuild extends Build {
     version := "0.1.0",
     scalaVersion := "2.10.0-M7",
 
-    //scalaHome := Some(file("/Users/erik/w/scala/build/pack")),
-
     scalacOptions ++= Seq(
       //"-Xlog-free-terms",
       "-Yinline-warnings",
@@ -19,16 +17,17 @@ object MyBuild extends Build {
 
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % "2.10.0-M7",
-      //"org.scalatest" %% "scalatest" % "1.7.2" % "test"
       "org.scalatest" % "scalatest_2.10.0-M7" % "1.9-2.10.0-M7-B1" % "test"
     )
   )
 
-  val key = AttributeKey[Boolean]("javaOptionsPatched")
-
   lazy val root = Project("debox", file("."))
+  lazy val ext = Project("ext", file("ext")).dependsOn(root)
+  lazy val benchmark = Project("benchmark", file("benchmark")).
+    settings(benchmarkSettings: _*).
+    dependsOn(root, ext)
 
-  lazy val benchmark: Project = Project("benchmark", file("benchmark")) settings (benchmarkSettings: _*) dependsOn (root)
+  val key = AttributeKey[Boolean]("javaOptionsPatched")
 
   def benchmarkSettings = Seq(
     // raise memory limits here if necessary
