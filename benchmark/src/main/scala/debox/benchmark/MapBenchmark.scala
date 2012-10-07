@@ -5,6 +5,8 @@ import scala.{specialized => spec}
 import scala.collection.mutable
 import scala.util.Random._
 
+import debox.Ext._
+
 import com.google.caliper.Param
 
 import debox._
@@ -13,8 +15,7 @@ import debox.set
 object MapBenchmarks extends MyRunner(classOf[MapBenchmarks])
 
 class MapBenchmarks extends MyBenchmark {
-  //@Param(Array("8", "11", "14", "17"))
-  @Param(Array("4", "6", "8"))
+  @Param(Array("4", "6", "8", "11", "14", "17", "20"))
   var pow:Int = 0
 
   var keys:Array[Int] = null
@@ -23,13 +24,7 @@ class MapBenchmarks extends MyBenchmark {
 
   var scalaMap:mutable.Map[Int, Double] = null
   var javaMap:java.util.HashMap[Int, Double] = null
-  var markedMap:map.Map[Int, Double] = null
-  var bitmaskMap:map.Map[Int, Double] = null
-
-  def mf[A](implicit ev:ClassTag[A]) = ev
-  val noUnset = NoUnset
-  def marked[A](a:A) = MarkedUnset(a)
-  val hashInt = Hash.IntHash
+  var deboxMap:map.Map[Int, Double] = null
 
   override protected def setUp() {
     val n = scala.math.pow(2, pow).toInt
@@ -40,15 +35,13 @@ class MapBenchmarks extends MyBenchmark {
 
     scalaMap = mutable.Map.empty[Int, Double]
     javaMap = new java.util.HashMap[Int, Double]()
-    markedMap = map.Map.empty[Int, Double](mf[Int], marked(0), hashInt, mf[Double])
-    bitmaskMap = map.Map.empty[Int, Double](mf[Int], noUnset, hashInt, mf[Double])
+    deboxMap = map.Map.empty[Int, Double]
 
     var i = 0
     while (i < n) {
       scalaMap(keys(i)) = vals(i)
       javaMap.put(keys(i), vals(i))
-      markedMap(keys(i)) = vals(i)
-      bitmaskMap(keys(i)) = vals(i)
+      deboxMap(keys(i)) = vals(i)
       i += 1
     }
   }
@@ -56,19 +49,18 @@ class MapBenchmarks extends MyBenchmark {
   // building benchmark
   def timeBuildScalaMap(reps:Int) = run(reps)(buildScalaMap)
   def timeBuildJavaMap(reps:Int) = run(reps)(buildScalaMap)
-  def timeBuildMarkedMap(reps:Int) = run(reps)(buildMarkedMap)
-  def timeBuildBitmaskMap(reps:Int) = run(reps)(buildBitmaskMap)
-
+  def timeBuildDeboxMap(reps:Int) = run(reps)(buildDeboxMap)
+  
   // foreach benchmark
   def timeForeachScalaMap(reps:Int) = run(reps)(foreachScalaMap)
-  def timeForeachMarkedMap(reps:Int) = run(reps)(foreachMarkedMap)
-  def timeForeachBitmaskMap(reps:Int) = run(reps)(foreachBitmaskMap)
+  def timeForeachJavaMap(reps:Int) = run(reps)(foreachJavaMap)
+  def timeForeachDeboxMap(reps:Int) = run(reps)(foreachDeboxMap)
+  def timeForeachMacroDeboxMap(reps:Int) = run(reps)(foreachMacroDeboxMap)
   
   // contains benchmark
   def timeContainsScalaMap(reps:Int) = run(reps)(containsScalaMap)
   def timeContainsJavaMap(reps:Int) = run(reps)(containsJavaMap)
-  def timeContainsMarkedMap(reps:Int) = run(reps)(containsMarkedMap)
-  def timeContainsBitmaskMap(reps:Int) = run(reps)(containsBitmaskMap)
+  def timeContainsDeboxMap(reps:Int) = run(reps)(containsDeboxMap)
 
   def buildScalaMap:Int = {
     val m = mutable.Map.empty[Int, Double]
@@ -86,45 +78,63 @@ class MapBenchmarks extends MyBenchmark {
     m.size
   }
 
-  def buildMarkedMap:Int = {
-    val m = map.Map.empty[Int, Double](mf[Int], marked(0), Hash.IntHash, mf[Double])
+  def buildDeboxMap:Int = {
+    val m = map.Map.empty[Int, Double]
     var i = 0
     val len = keys.length
     while (i < len) { m(keys(i)) = vals(i); i += 1 }
     m.length
   }
-
-  def buildBitmaskMap:Int = {
-    val m = map.Map.empty[Int, Double](mf[Int], NoUnset, Hash.IntHash, mf[Double])
-    var i = 0
-    val len = keys.length
-    while (i < len) { m(keys(i)) = vals(i); i += 1 }
-    m.length
-  }
-
 
   // foreach benchmark
   def foreachScalaMap = {
     var ks = 0
     var vs = 0.0
-    scalaMap.foreach{case (k,v) => { ks += k; vs += v }}
+    scalaMap.foreach{case (k,v) => ks += k * 3}
+    scalaMap.foreach{case (k,v) => vs += v * 3}
+    scalaMap.foreach{case (k,v) => { ks -= k; vs -= 2 * v }}
+    scalaMap.foreach{case (k,v) => { ks -= 2 * k; vs -= v }}
+
     (ks, vs)
   }
 
-  def foreachMarkedMap = {
+  // foreach benchmark
+  def foreachJavaMap = {
+    val es = javaMap.entrySet
     var ks = 0
     var vs = 0.0
-    markedMap.foreach((k,v) => { ks += k; vs += v })
+    val it1 = es.iterator; while (it1.hasNext) { ks += it1.next().getKey * 3 }
+    val it2 = es.iterator; while (it2.hasNext) { vs += it2.next().getValue * 3 }
+    val it3 = es.iterator; while (it3.hasNext) {
+      val e = it3.next(); ks -= e.getKey; vs -= 2 * e.getValue
+    }
+    val it4 = es.iterator; while (it4.hasNext) {
+      val e = it4.next(); ks -= 2 * e.getKey; vs -= e.getValue
+    }
+
     (ks, vs)
   }
 
-  def foreachBitmaskMap = {
+  def foreachDeboxMap = {
     var ks = 0
     var vs = 0.0
-    bitmaskMap.foreach((k,v) => { ks += k; vs += v })
+    deboxMap.foreach((k,v) => ks += k * 3)
+    deboxMap.foreach((k,v) => vs += v * 3)
+    deboxMap.foreach((k,v) => { ks -= k; vs -= 2 * v })
+    deboxMap.foreach((k,v) => { ks -= 2 * k; vs -= v })
     (ks, vs)
   }
 
+  def foreachMacroDeboxMap = {
+    import debox.Ext._
+    var ks = 0
+    var vs = 0.0
+    deboxMap.foreach_((k, v) => ks += k * 3)
+    deboxMap.foreach_((k, v) => vs += v * 3)
+    deboxMap.foreach_((k, v) => { ks -= k; vs -= 2 * v })
+    deboxMap.foreach_((k, v) => { ks -= 2 * k; vs -= v })
+    (ks, vs)
+  }
 
   // contains benchmark
   def containsScalaMap:Long = {
@@ -149,25 +159,14 @@ class MapBenchmarks extends MyBenchmark {
     t
   }
 
-  def containsMarkedMap:Long = {
+  def containsDeboxMap:Long = {
     var i = 0
     var len = keys.length
     var t = 0
-    while (i < len) { if (markedMap.contains(keys(i))) t += 1; i += 1 }
+    while (i < len) { if (deboxMap.contains(keys(i))) t += 1; i += 1 }
     i = 0
     len = keys2.length
-    while (i < len) { if (markedMap.contains(keys2(i))) t += 1; i += 1 }
-    t
-  }
-
-  def containsBitmaskMap:Long = {
-    var i = 0
-    var len = keys.length
-    var t = 0
-    while (i < len) { if (bitmaskMap.contains(keys(i))) t += 1; i += 1 }
-    i = 0
-    len = keys2.length
-    while (i < len) { if (bitmaskMap.contains(keys2(i))) t += 1; i += 1 }
+    while (i < len) { if (deboxMap.contains(keys2(i))) t += 1; i += 1 }
     t
   }
 }
