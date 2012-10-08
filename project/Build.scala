@@ -9,6 +9,7 @@ object MyBuild extends Build {
 
     scalacOptions ++= Seq(
       //"-Xlog-free-terms",
+      "-feature",
       "-Yinline-warnings",
       "-deprecation",
       "-optimize",
@@ -23,9 +24,7 @@ object MyBuild extends Build {
 
   lazy val root = Project("debox", file("."))
   lazy val ext = Project("ext", file("ext")).dependsOn(root)
-  lazy val benchmark = Project("benchmark", file("benchmark")).
-    settings(benchmarkSettings: _*).
-    dependsOn(root, ext)
+  lazy val benchmark:Project = Project("benchmark", file("benchmark")).settings(benchmarkSettings: _*).dependsOn(root, ext)
 
   val key = AttributeKey[Boolean]("javaOptionsPatched")
 

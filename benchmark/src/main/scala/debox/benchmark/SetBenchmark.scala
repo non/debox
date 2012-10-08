@@ -10,12 +10,12 @@ import com.google.caliper.Param
 
 import debox._
 import debox.set
+import debox.Ext._
 
 object SetBenchmarks extends MyRunner(classOf[SetBenchmarks])
 
 class SetBenchmarks extends MyBenchmark {
-  //@Param(Array("8", "11", "14", "17", "20"))
-  @Param(Array("8", "11", "14", "17"))
+  @Param(Array("6", "8", "11", "14", "17", "20"))
   var pow:Int = 0
 
   var data:Array[Long] = null
@@ -23,13 +23,7 @@ class SetBenchmarks extends MyBenchmark {
 
   var scalaSet:mutable.Set[Long] = null
   var javaSet:java.util.HashSet[Long] = null
-  var markedSet:set.Set[Long] = null
-  var bitmaskSet:set.Set[Long] = null
-
-  val manifest = implicitly[ClassTag[Long]]
-  val noUnset = NoUnset
-  val markZero = MarkedUnset(0L)
-  val hashLong = Hash.LongHash
+  var deboxSet:set.Set[Long] = null
 
   var j = 1
 
@@ -38,34 +32,42 @@ class SetBenchmarks extends MyBenchmark {
     data = init(n)(nextLong).map(n => if(n == 0L) n + 1 else n)
     data2 = init(n / 10)(nextLong).map(n => if(n == 0L) n + 1 else n)
 
-    scalaSet = mutable.Set(data:_*)
+    scalaSet = mutable.Set.empty[Long]
     javaSet = new java.util.HashSet[Long]()
-    data.foreach { n => javaSet.add(n) }
-    markedSet = set.Set(data)(manifest, markZero, hashLong)
-    bitmaskSet = set.Set(data)(manifest, noUnset, hashLong)
+    deboxSet = set.Set.empty[Long]
+
+    var i = 0
+    while (i < n) {
+      val item = data(i)
+      scalaSet.add(item)
+      javaSet.add(item)
+      deboxSet.add(item)
+      i += 1
+    }
   }
 
   // building benchmark
   def timeBuildScalaSet(reps:Int) = run(reps)(buildScalaSet)
   def timeBuildJavaSet(reps:Int) = run(reps)(buildJavaSet)
-  def timeBuildMarkedSet(reps:Int) = run(reps)(buildMarkedSet)
-  def timeBuildBitmaskSet(reps:Int) = run(reps)(buildBitmaskSet)
+  def timeBuildDeboxSet(reps:Int) = run(reps)(buildDeboxSet)
   
   // foreach benchmark
   def timeForeachScalaSet(reps:Int) = run(reps)(foreachScalaSet)
-  def timeForeachMarkedSet(reps:Int) = run(reps)(foreachMarkedSet)
-  def timeForeachBitmaskSet(reps:Int) = run(reps)(foreachBitmaskSet)
+  def timeForeachJavaSet(reps:Int) = run(reps)(foreachScalaSet)
+  def timeForeachDeboxSet(reps:Int) = run(reps)(foreachDeboxSet)
+  def timeForeachMacroDeboxSet(reps:Int) = run(reps)(foreachMacroDeboxSet)
   
   // contains benchmark
   def timeContainsScalaSet(reps:Int) = run(reps)(containsScalaSet)
   def timeContainsJavaSet(reps:Int) = run(reps)(containsJavaSet)
-  def timeContainsMarkedSet(reps:Int) = run(reps)(containsMarkedSet)
-  def timeContainsBitmaskSet(reps:Int) = run(reps)(containsBitmaskSet)
+  def timeContainsDeboxSet(reps:Int) = run(reps)(containsDeboxSet)
   
   // map benchmark
   def timeMapScalaSet(reps:Int) = run(reps)(mapScalaSet)
-  def timeMapMarkedSet(reps:Int) = run(reps)(mapMarkedSet)
-  def timeMapBitmaskSet(reps:Int) = run(reps)(mapBitmaskSet)
+  def timeMapDeboxSet(reps:Int) = run(reps)(mapDeboxSet)
+
+  def timeFoldScalaSet(reps:Int) = run(reps)(foldScalaSet)
+  def timeFoldDeboxSet(reps:Int) = run(reps)(foldDeboxSet)
 
   // building benchmark
   def buildScalaSet:Int = {
@@ -84,16 +86,8 @@ class SetBenchmarks extends MyBenchmark {
     s.size
   }
 
-  def buildMarkedSet:Int = {
-    val s = set.Set.empty[Long](manifest, markZero, Hash.LongHash)
-    var i = 0
-    val len = data.length
-    while (i < len) { s.add(data(i)); i += 1 }
-    s.length
-  }
-
-  def buildBitmaskSet:Int = {
-    val s = set.Set.empty[Long](manifest, noUnset, Hash.LongHash)
+  def buildDeboxSet:Int = {
+    val s = set.Set.empty[Long]
     var i = 0
     val len = data.length
     while (i < len) { s.add(data(i)); i += 1 }
@@ -103,19 +97,37 @@ class SetBenchmarks extends MyBenchmark {
   // foreach benchmark
   def foreachScalaSet:Long = {
     var t = 0L
+    scalaSet.foreach(n => t += 4 * n)
+    scalaSet.foreach(n => t -= 2 * n)
     scalaSet.foreach(n => t += n)
+    scalaSet.foreach(n => t -= 2 * n)
     t
   }
 
-  def foreachMarkedSet:Long = {
+  def foreachJavaSet:Long = {
     var t = 0L
-    markedSet.foreach(n => t += n)
+    val it1 = javaSet.iterator; while (it1.hasNext) { t += 4 * it1.next() }
+    val it2 = javaSet.iterator; while (it2.hasNext) { t -= 2 * it2.next() }
+    val it3 = javaSet.iterator; while (it3.hasNext) { t += it3.next() }
+    val it4 = javaSet.iterator; while (it4.hasNext) { t -= 2 * it4.next() }
     t
   }
 
-  def foreachBitmaskSet:Long = {
+  def foreachDeboxSet:Long = {
     var t = 0L
-    bitmaskSet.foreach(n => t += n)
+    deboxSet.foreach(n => t += 4 * n)
+    deboxSet.foreach(n => t -= 2 * n)
+    deboxSet.foreach(n => t += n)
+    deboxSet.foreach(n => t -= 2 * n)
+    t
+  }
+
+  def foreachMacroDeboxSet:Long = {
+    var t = 0L
+    deboxSet.foreach_(n => t += 4 * n)
+    deboxSet.foreach_(n => t -= 2 * n)
+    deboxSet.foreach_(n => t += n)
+    deboxSet.foreach_(n => t -= 2 * n)
     t
   }
 
@@ -142,25 +154,14 @@ class SetBenchmarks extends MyBenchmark {
     t
   }
 
-  def containsMarkedSet:Long = {
+  def containsDeboxSet:Long = {
     var i = 0
     var len = data.length
     var t = 0
-    while (i < len) { if (markedSet(data(i))) t += 1; i += 1 }
+    while (i < len) { if (deboxSet(data(i))) t += 1; i += 1 }
     i = 0
     len = data2.length
-    while (i < len) { if (markedSet(data2(i))) t += 1; i += 1 }
-    t
-  }
-
-  def containsBitmaskSet:Long = {
-    var i = 0
-    var len = data.length
-    var t = 0
-    while (i < len) { if (bitmaskSet(data(i))) t += 1; i += 1 }
-    i = 0
-    len = data2.length
-    while (i < len) { if (bitmaskSet(data2(i))) t += 1; i += 1 }
+    while (i < len) { if (deboxSet(data2(i))) t += 1; i += 1 }
     t
   }
 
@@ -168,6 +169,19 @@ class SetBenchmarks extends MyBenchmark {
   val ms = implicitly[ClassTag[Int]]
 
   def mapScalaSet = scalaSet.map(_.toInt + 3)
-  def mapMarkedSet = markedSet.map(_.toInt + 3)(ms, MarkedUnset(0), Hash.IntHash)
-  def mapBitmaskSet = bitmaskSet.map(_.toInt + 3)(ms, NoUnset, Hash.IntHash)
+  def mapDeboxSet = deboxSet.map(_.toInt + 3)
+
+  def foldScalaSet = {
+    val zmin = scalaSet.foldLeft(Long.MaxValue)((x, y) => if (y < x) y else x)
+    val zmax = scalaSet.foldLeft(Long.MinValue)((x, y) => if (y > x) y else x)
+    val t = scalaSet.foldLeft(0.0)((t:Double, x:Long) => t + x)
+    (zmin, zmax, t)
+  }
+
+  def foldDeboxSet = {
+    val zmin = deboxSet.fold(Long.MaxValue)((x, y) => if (y < x) y else x)
+    val zmax = deboxSet.fold(Long.MinValue)((x, y) => if (y > x) y else x)
+    val t = deboxSet.fold(0.0)((x, y) => x + y)
+    (zmin, zmax, t)
+  }
 }

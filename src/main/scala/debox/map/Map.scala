@@ -4,45 +4,11 @@ import debox._
 
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
-import scala.reflect.macros.Context
 import scala.{specialized => spec}
-
-import language.experimental.macros
 
 class InvalidSizes(k: Int, v: Int) extends Exception("%s, %s" format (k, v))
 class MapOverflow(n: Int) extends Exception("size %s exceeds max" format n)
 class NotFound(k: String) extends Exception("key %s was not found" format k)
-
-object Util {
-  // some very simple inlines to help with bit-twiddling
-  @inline final def shift(i:Int) = (i & 15) << 1
-  @inline final def shifted(bs: Array[Int], i:Int) = bs(i >> 4) >> shift(i)
-  @inline final def ored(bs: Array[Int], i:Int, v:Int) = bs(i >> 4) |= v
-  @inline final def anded(bs: Array[Int], i:Int, v:Int) = bs(i >> 4) &= v
-
-  /**
-   * Return the status of bucket 'i'.
-   *
-   * 3 means the bucket is defining a key/value
-   * 2 means the bucket was previously used but is currently empty
-   * 0 means the bucket is unused
-   *
-   * The distinction betwee 3 and 2 is important when keys have been deleted.
-   * In these cases, a previous collision still needs to be maintained (for
-   * look up), although for inserting new keys, the bucket can be used.
-   */
-  final def status(bs: Array[Int], i:Int): Int = shifted(bs, i) & 3
-
-  /**
-   * Mark bucket 'i' as in-use (3).
-   */
-  final def set(bs: Array[Int], i:Int):Unit = ored(bs, i, 3 << shift(i))
-
-  /**
-   * Unmark bucket 'i' (unset the 1 bit, so 3 => 2, 0 => 0).
-   */
-  final def unset(bs: Array[Int], i:Int):Unit = anded(bs, i, ~(1 << shift(i)))
-}
 
 object Map {
   /**
@@ -51,9 +17,7 @@ object Map {
   def empty[
     @spec(Int, Long, Double, AnyRef) A:ClassTag:Hash,
     @spec(Int, Long, Double, AnyRef) B:ClassTag
-  ] = {
-    new Map(new Array[A](8), new Array[B](8), new Array[Int](1), 0, 0)
-  }
+  ] = new Map(new Array[A](8), new Array[B](8), new Array[Int](1), 0, 0)
 
   /**
    * Create a Map preallocated to a particular size.
@@ -66,13 +30,8 @@ object Map {
     @spec(Int, Long, Double, AnyRef) A:ClassTag:Hash,
     @spec(Int, Long, Double, AnyRef) B:ClassTag
   ](n:Int) = {
-    if (n > 1395864371) throw new MapOverflow(n)
-    @inline @tailrec def loop(limit:Int, shifts:Int): Int = if (n > limit) {
-      loop(limit << 1, shifts + 1)
-    } else {
-      shifts
-    }
-    val sz = 8 << loop(5, 0)
+    val sz = Util.nextPowerOfTwo(n)
+    if (sz < 1) throw new MapOverflow(n)
     val m = (sz + 15) >> 4
     new Map(new Array[A](sz), new Array[B](sz), new Array[Int](m), 0, 0)
   }
@@ -219,19 +178,6 @@ final class Map[
     loop(i, i)
   }
 
-  final def hash(key:A, _mask:Int, _keys:Array[A], _buckets:Array[Int]):Int = {
-    @inline @tailrec def loop(i:Int, perturbation:Int): Int = {
-      val j = i & _mask
-      if (Util.status(_buckets, j) == 3 && _keys(j) != key) {
-        loop((i << 2) + i + perturbation + 1, perturbation >> 5)
-      } else {
-        j
-      }
-    }
-    val i = Hash[A].hash(key) & 0x7fffffff
-    loop(i, i)
-  }
-
   final def foreach(f: (A, B) => Unit) {
     @inline @tailrec def inner(i: Int, b: Int, shift: Int, count: Int): Int = {
       if (((b >> shift) & 3) == 3) {
@@ -246,6 +192,19 @@ final class Map[
       if (count < len) outer(i + 16, k + 1, inner(i, buckets(k), 0, count), len)
     }
     outer(0, 0, 0, len)
+  }
+
+  final def hash(key:A, _mask:Int, _keys:Array[A], _buckets:Array[Int]):Int = {
+    @inline @tailrec def loop(i:Int, perturbation:Int): Int = {
+      val j = i & _mask
+      if (Util.status(_buckets, j) == 3 && _keys(j) != key) {
+        loop((i << 2) + i + perturbation + 1, perturbation >> 5)
+      } else {
+        j
+      }
+    }
+    val i = Hash[A].hash(key) & 0x7fffffff
+    loop(i, i)
   }
 
   final def resize(): Unit2[A, B] = {

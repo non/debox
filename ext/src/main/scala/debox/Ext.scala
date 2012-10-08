@@ -5,47 +5,100 @@ import scala.reflect.ClassTag
 import scala.reflect.macros.Context
 import scala.{specialized => spec}
 
+import debox.map.Map
+import debox.set.Set
+
+import language.implicitConversions
 import language.experimental.macros
 
-class MapOps[A, B](m: map.Map[A, B]) {
-  def foreach_(f: (A, B) => Unit): Unit = macro Macros.foreach_[A, B]
+// making the Ops classes extend AnyVal seems to crash the compiler.
+// it would be nice to provide macro implementations for all of them, either
+// in terms of the basic foreach_ macro or independently. for now this is
+// probably good enough. 
+
+class MapMacroOps[A, B](m: Map[A, B]) {
+  def foreach_(f: (A, B) => Unit): Unit = macro Macros.mapForeach[A, B]
+}
+
+class MapOps[A:ClassTag:Hash, B:ClassTag](m: Map[A, B]) {//extends AnyVal {
+  def unionLeft(that: Map[A, B]): Map[A, B] = {
+    val out = that.copy
+    Ext.mapMacroOps(m).foreach_((k, v) => out(k) = v)
+    out
+  }
+  
+  def unionRight(that: Map[A, B]): Map[A, B] = new MapOps(that).unionLeft(m)
+  
+  def unionMerge(that: Map[A, B])(f: (B, B) => B): Map[A, B] = {
+    val out = that.copy
+    Ext.mapMacroOps(m).foreach_((k, v) => out(k) = if (out.contains(k)) f(v, out(k)) else v)
+    out
+  }
+}
+
+class SetMacroOps[A](m: Set[A]) {
+  def foreach_(f: A => Unit): Unit = macro Macros.setForeach[A]
+  def fold[T](init: T)(f: (T, A) => T): T = macro Macros.setFold[A, T]
+  def loopWhile(p: A => Boolean): Boolean = macro Macros.setLoopWhile[A]
+  def loopUntil(p: A => Boolean): Boolean = macro Macros.setLoopUntil[A]
+}
+
+class SetOps[@spec A:ClassTag:Hash](m: Set[A]) {
+  def map[@spec B:ClassTag:Hash](f: A => B): Set[B] = {
+    //val out = Set.empty[B]
+    val out = Set.ofDim[B](m.items.length / 2)
+    Ext.setMacroOps(m).foreach_(a => out.add(f(a)))
+    out
+  }
+
+  def union(that: Set[A]): Set[A] = {
+    if (m.length > that.length) return Ext.setOps(that).union(m)
+    val out = that.copy
+    Ext.setMacroOps(m).foreach_(a => out.add(a))
+    out
+  }
+  
+  def intersection(that: Set[A]): Set[A] = {
+    if (m.length < that.length) return Ext.setOps(that).intersection(m)
+    val out = Set.empty[A]
+    Ext.setMacroOps(m).foreach_(a => if (that(a)) out.add(a))
+    out
+  }
+  
+  def difference(that: Set[A]): Set[A] = {
+    val out = Set.empty[A]
+    Ext.setMacroOps(m).foreach_(a => if (!that(a)) out.add(a))
+    out
+  }
+
+  def extend(that: Set[A]): Unit = Ext.setMacroOps(that).foreach_(a => m.add(a))
+
+  def isSubsetOf(that: Set[A]): Boolean = {
+    if (m.length > that.length) return false
+    Ext.setMacroOps(m).loopWhile(that)
+  }
+
+  def isSupersetOf(that: Set[A]): Boolean = new SetOps(that).isSubsetOf(m)
+
+  def exists(p: A => Boolean): Boolean = Ext.setMacroOps(m).loopUntil(p)
+  def forall(p: A => Boolean): Boolean = Ext.setMacroOps(m).loopWhile(p)
+
+  def count(p: A => Boolean): Int = Ext.setMacroOps(m).fold(0) {
+    (n, a) => if (p(a)) n + 1 else n
+  }
+
+  def partition(p: A => Boolean): (Set[A], Set[A]) = {
+    val n = m.items.length
+    val no = Set.empty[A]
+    val yes = Set.empty[A]
+    Ext.setMacroOps(m).foreach_(a => if (p(a)) yes.add(a) else no.add(a))
+    (no, yes)
+  }
 }
 
 object Ext {
-  implicit def map2Ops[A, B](m: map.Map[A, B]) = new MapOps(m)
-}
-
-object Macros {
-  final def foreach_[A, B](c:Context)(f: c.Expr[(A, B) => Unit]): c.Expr[Unit] = {
-    import c.universe._
-    val m = c.prefix.tree match {
-      case Apply(TypeApply(_, _), List(m)) => c.Expr[map.Map[A, B]](m)
-      case t => sys.error("bad tree %s" format t)
-    }
-
-    val tree = c.universe.reify {
-      import scala.annotation.tailrec
-
-      val buckets = m.splice.getBuckets
-      val keys = m.splice.keys
-      val vals = m.splice.vals
-      @inline @tailrec def inner(i: Int, b: Int, shift: Int, count: Int): Int = {
-        if (((b >> shift) & 3) == 3) {
-          f.splice(keys(i), vals(i))
-          if (shift < 30) inner(i + 1, b, shift + 2, count + 1) else count + 1
-        } else {
-          if (shift < 30) inner(i + 1, b, shift + 2, count) else count
-        }
-      }
-  
-      @inline @tailrec def outer(i: Int, k: Int, count: Int, len: Int) {
-        if (count < len) outer(i + 16, k + 1, inner(i, buckets(k), 0, count), len)
-      }
-      outer(0, 0, 0, m.splice.length)
-    }
-
-    new debox.map.Inliner[c.type](c).inlineAndReset(tree)
-
-    tree
-  }
+  implicit def mapOps[A:ClassTag:Hash, B:ClassTag](m: Map[A, B]) = new MapOps(m)
+  implicit def mapMacroOps[A:ClassTag:Hash, B:ClassTag](m: Map[A, B]) = new MapMacroOps(m)
+  implicit def setOps[A:ClassTag:Hash](m: Set[A]) = new SetOps(m)
+  implicit def setMacroOps[A:ClassTag:Hash](m: Set[A]) = new SetMacroOps(m)
 }
