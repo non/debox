@@ -65,6 +65,7 @@ class SetBenchmarks extends MyBenchmark {
   // map benchmark
   def timeMapScalaSet(reps:Int) = run(reps)(mapScalaSet)
   def timeMapDeboxSet(reps:Int) = run(reps)(mapDeboxSet)
+  //def timeMapMacroDeboxSet(reps:Int) = run(reps)(mapMacroDeboxSet)
 
   def timeFoldScalaSet(reps:Int) = run(reps)(foldScalaSet)
   def timeFoldDeboxSet(reps:Int) = run(reps)(foldDeboxSet)
@@ -168,8 +169,26 @@ class SetBenchmarks extends MyBenchmark {
   // map
   val ms = implicitly[ClassTag[Int]]
 
-  def mapScalaSet = scalaSet.map(_.toInt + 3)
-  def mapDeboxSet = deboxSet.map(_.toInt + 3)
+  def mapScalaSet = {
+    val a = scalaSet.map(_.toInt + 3)
+    val b = scalaSet.map(_.toString)
+    val c = scalaSet.map(_ & 0xffff)
+    (a, b, c)
+  }
+    
+  def mapDeboxSet = {
+    val a = deboxSet.map(_.toInt + 3)
+    val b = deboxSet.map(_.toString)
+    val c = deboxSet.map(_ & 0xffff)
+    (a, b, c)
+  }
+
+  //def mapMacroDeboxSet = {
+  //  val a = deboxSet.map_[Int](_.toInt + 3)(implicitly[ClassTag[Int]])
+  //  val b = deboxSet.map_(_.toString)(implicitly[ClassTag[String]])
+  //  val c = deboxSet.map_(_ & 0xffff)(implicitly[ClassTag[Long]])
+  //  (a, b, c)
+  //}
 
   def foldScalaSet = {
     val zmin = scalaSet.foldLeft(Long.MaxValue)((x, y) => if (y < x) y else x)

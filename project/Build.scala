@@ -8,7 +8,8 @@ object MyBuild extends Build {
     scalaVersion := "2.10.0-M7",
 
     scalacOptions ++= Seq(
-      //"-Xlog-free-terms",
+      "-Xlog-free-terms",
+      //"-Ymacro-debug-lite",
       "-feature",
       "-Yinline-warnings",
       "-deprecation",

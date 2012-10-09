@@ -11,11 +11,11 @@ class SetOverflow(n: Int) extends Exception("size %s exceeds max" format n)
 
 object Set {
   def empty[
-    @spec(Int, Long, Double, AnyRef) A:ClassTag:Hash
+    @spec(Int, Long, Double, AnyRef) A:ClassTag
   ] = new Set(new Array[A](8), new Array[Int](1), 0, 0)
 
   def ofDim[
-    @spec(Int, Long, Double, AnyRef) A:ClassTag:Hash
+    @spec(Int, Long, Double, AnyRef) A:ClassTag
   ](n:Int) = {
     val sz = Util.nextPowerOfTwo(n)
     if (sz < 1) throw new SetOverflow(n)
@@ -24,11 +24,11 @@ object Set {
   }
 
   def apply[
-    @spec(Int, Long, Double, AnyRef) A:ClassTag:Hash
+    @spec(Int, Long, Double, AnyRef) A:ClassTag
   ]():Set[A] = empty[A]
 
   def apply[
-    @spec(Int, Long, Double, AnyRef) A:ClassTag:Hash
+    @spec(Int, Long, Double, AnyRef) A:ClassTag
   ](as:Array[A]) = {
     val set = ofDim[A](as.length)
     val limit = as.length - 1
@@ -42,7 +42,7 @@ object Set {
 }
 
 final class Set[
-  @spec(Int, Long, Double, AnyRef) A:ClassTag:Hash
+  @spec(Int, Long, Double, AnyRef) A:ClassTag
 ] protected[debox] (
   as:Array[A], bs:Array[Int], n:Int, u:Int
 ) extends Function1[A, Boolean] {
@@ -84,7 +84,7 @@ final class Set[
         loop((i << 2) + i + perturbation + 1, perturbation >> 5)
       }
     }
-    val i = Hash[A].hash(item) & 0x7fffffff
+    val i = item.## & 0x7fffffff
     loop(i, i)
   }
 
@@ -102,7 +102,7 @@ final class Set[
         loop((i << 2) + i + perturbation + 1, perturbation >> 5)
       }
     }
-    val i = Hash[A].hash(item) & 0x7fffffff
+    val i = item.## & 0x7fffffff
     loop(i, i)
   }
 
@@ -120,8 +120,14 @@ final class Set[
         loop((i << 2) + i + perturbation + 1, perturbation >> 5)
       }
     }
-    val i = Hash[A].hash(item) & 0x7fffffff
+    val i = item.## & 0x7fffffff
     loop(i, i)
+  }
+
+  def map[@spec(Int, Long, Double, AnyRef) B:ClassTag](f: A => B): Set[B] = {
+    val out = Set.empty[B]
+    foreach(a => out.add(f(a)))
+    out
   }
 
   final def foreach(f: A => Unit) {
@@ -149,7 +155,7 @@ final class Set[
         j
       }
     }
-    val i = Hash[A].hash(item) & 0x7fffffff
+    val i = item.## & 0x7fffffff
     loop(i, i)
   }
 
@@ -187,4 +193,26 @@ final class Set[
 
     new Unit1[A]
   }
+
+  def union(that: Set[A]): Set[A] = {
+    if (length > that.length) return that.union(this)
+    val out = that.copy
+    foreach(out.add)
+    out
+  }
+  
+  def intersection(that: Set[A]): Set[A] = {
+    if (length < that.length) return that.intersection(this)
+    val out = Set.empty[A]
+    foreach(a => if (that(a)) out.add(a))
+    out
+  }
+  
+  def difference(that: Set[A]): Set[A] = {
+    val out = Set.empty[A]
+    foreach(a => if (!that(a)) out.add(a))
+    out
+  }
+
+  def extend(that: Set[A]): Unit = foreach(add)
 }

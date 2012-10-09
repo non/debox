@@ -79,9 +79,7 @@ object Macros {
     import c.universe._
     val s = c.prefix.tree match {
       case Apply(Apply(TypeApply(_, _), List(s)), _) => c.Expr[Set[A]](s)
-      case t => {
-        sys.error("bad tree %s (%s)" format (t, t.getClass.getName))
-      }
+      case t => sys.error("bad tree %s (%s)" format (t, t.getClass.getName))
     }
 
     val tree = c.universe.reify {
@@ -114,9 +112,7 @@ object Macros {
     import c.universe._
     val s = c.prefix.tree match {
       case Apply(Apply(TypeApply(_, _), List(s)), _) => c.Expr[Set[A]](s)
-      case t => {
-        sys.error("bad tree %s (%s)" format (t, t.getClass.getName))
-      }
+      case t => sys.error("bad tree %s (%s)" format (t, t.getClass.getName))
     }
 
     val tree = c.universe.reify {
@@ -157,9 +153,7 @@ object Macros {
     import c.universe._
     val s = c.prefix.tree match {
       case Apply(Apply(TypeApply(_, _), List(s)), _) => c.Expr[Set[A]](s)
-      case t => {
-        sys.error("bad tree %s (%s)" format (t, t.getClass.getName))
-      }
+      case t => sys.error("bad tree %s (%s)" format (t, t.getClass.getName))
     }
 
     val tree = c.universe.reify {
