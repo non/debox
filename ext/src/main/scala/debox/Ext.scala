@@ -37,18 +37,12 @@ class MapOps[A:ClassTag, B:ClassTag](m: Map[A, B]) {//extends AnyVal {
 }
 
 class SetMacroOps[A: ClassTag](m: Set[A]) {
-  //def foreach_(f: A => Unit): Unit = macro Macros.setForeach[A]
-  //def fold[T](init: T)(f: (T, A) => T): T = macro Macros.setFold[A, T]
-  //def loopWhile(p: A => Boolean): Boolean = macro Macros.setLoopWhile[A]
-  //def loopUntil(p: A => Boolean): Boolean = macro Macros.setLoopUntil[A]
-}
-
-class SetOps[@spec(Int, Long, Double, AnyRef) A](m: Set[A]) {
+  def foreach_(f: A => Unit): Unit = macro set.Macros.foreach[A]
 }
 
 object Ext {
   implicit def mapOps[A:ClassTag, B:ClassTag](m: Map[A, B]) = new MapOps(m)
   implicit def mapMacroOps[A:ClassTag, B:ClassTag](m: Map[A, B]) = new MapMacroOps(m)
-  implicit def setOps[A:ClassTag](m: Set[A]) = new SetOps(m)
+
   implicit def setMacroOps[A:ClassTag](m: Set[A]) = new SetMacroOps(m)
 }

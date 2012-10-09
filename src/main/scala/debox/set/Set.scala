@@ -10,25 +10,17 @@ class InvalidSizes(k: Int, v: Int) extends Exception("%s, %s" format (k, v))
 class SetOverflow(n: Int) extends Exception("size %s exceeds max" format n)
 
 object Set {
-  def empty[
-    @spec(Int, Long, Double, AnyRef) A:ClassTag
-  ] = new Set(new Array[A](8), new Array[Byte](8), 0, 0)
+  def empty[@spec A:ClassTag] = new Set(new Array[A](8), new Array[Byte](8), 0, 0)
 
-  def ofDim[
-    @spec(Int, Long, Double, AnyRef) A:ClassTag
-  ](n:Int) = {
+  def ofDim[@spec A:ClassTag](n:Int) = {
     val sz = Util.nextPowerOfTwo(n)
     if (sz < 1) throw new SetOverflow(n)
     new Set(new Array[A](sz), new Array[Byte](sz), 0, 0)
   }
 
-  def apply[
-    @spec(Int, Long, Double, AnyRef) A:ClassTag
-  ]():Set[A] = empty[A]
+  def apply[@spec A:ClassTag]():Set[A] = empty[A]
 
-  def apply[
-    @spec(Int, Long, Double, AnyRef) A:ClassTag
-  ](as:Array[A]) = {
+  def apply[@spec A:ClassTag](as:Array[A]) = {
     val set = ofDim[A](as.length)
     val limit = as.length - 1
     @inline @tailrec
@@ -41,11 +33,8 @@ object Set {
   }
 }
 
-final class Set[
-  @spec(Int, Long, Double, AnyRef) A:ClassTag
-] protected[debox] (
-  as:Array[A], bs:Array[Byte], n:Int, u:Int
-) extends Function1[A, Boolean] {
+final class Set[@spec A:ClassTag] protected[debox]
+(as:Array[A], bs:Array[Byte], n:Int, u:Int) extends Function1[A, Boolean] {
 
   var items:Array[A] = as
   var buckets:Array[Byte] = bs
@@ -140,13 +129,15 @@ final class Set[
     loop(0, 0, length - 1)
   }
 
-  def fold[@spec(Int, Long, Double, AnyRef) B](init: B)(f: (B, A) => B) = {
+  def fold[@spec(Int, Long, Double, AnyRef) B](init: B)(f: (B, A) => B): B = {
+    var result = init
     @inline @tailrec
-    def loop(b: B, i: Int, limit: Int) {
-      val bb = if (buckets(i) == 3) f(b, items(i)) else b
-      if (i < limit) loop(bb, i + 1, limit)
+    def loop(i: Int, limit: Int) {
+      if (buckets(i) == 3) result = f(result, items(i))
+      if (i < limit) loop(i + 1, limit)
     }
-    loop(init, 0, items.length - 1)
+    loop(0, items.length - 1)
+    result
   }
 
   final def hash(item:A, _mask:Int, _items:Array[A], _buckets:Array[Byte]):Int = {

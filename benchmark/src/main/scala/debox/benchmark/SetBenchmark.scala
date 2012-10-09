@@ -15,8 +15,8 @@ import debox.Ext._
 object SetBenchmarks extends MyRunner(classOf[SetBenchmarks])
 
 class SetBenchmarks extends MyBenchmark {
-  //@Param(Array("6", "8", "11", "14", "17", "20"))
-  @Param(Array("11"))
+  @Param(Array("6", "8", "11", "14", "17", "20"))
+  //@Param(Array("11"))
   var pow:Int = 0
 
   var data:Array[Long] = null
@@ -47,32 +47,33 @@ class SetBenchmarks extends MyBenchmark {
     }
   }
 
-  // building benchmark
-  def timeBuildScalaSet(reps:Int) = run(reps)(buildScalaSet)
-  def timeBuildJavaSet(reps:Int) = run(reps)(buildJavaSet)
-  def timeBuildDeboxSet(reps:Int) = run(reps)(buildDeboxSet)
+  //// building benchmark
+  //def timeBuildScalaSet(reps:Int) = run(reps)(buildScalaSet)
+  //def timeBuildJavaSet(reps:Int) = run(reps)(buildJavaSet)
+  //def timeBuildDeboxSet(reps:Int) = run(reps)(buildDeboxSet)
   
-  // foreach benchmark
-  def timeForeachScalaSet(reps:Int) = run(reps)(foreachScalaSet)
-  def timeForeachJavaSet(reps:Int) = run(reps)(foreachScalaSet)
-  def timeForeachDeboxSet(reps:Int) = run(reps)(foreachDeboxSet)
+  //// foreach benchmark
+  //def timeForeachScalaSet(reps:Int) = run(reps)(foreachScalaSet)
+  //def timeForeachJavaSet(reps:Int) = run(reps)(foreachScalaSet)
+  //def timeForeachDeboxSet(reps:Int) = run(reps)(foreachDeboxSet)
   //def timeForeachMacroDeboxSet(reps:Int) = run(reps)(foreachMacroDeboxSet)
   
-  // contains benchmark
-  def timeContainsScalaSet(reps:Int) = run(reps)(containsScalaSet)
-  def timeContainsJavaSet(reps:Int) = run(reps)(containsJavaSet)
-  def timeContainsDeboxSet(reps:Int) = run(reps)(containsDeboxSet)
-  
-  // map benchmark
-  def timeMapScalaSet(reps:Int) = run(reps)(mapScalaSet)
-  def timeMapDeboxSet(reps:Int) = run(reps)(mapDeboxSet)
-  //def timeMapMacroDeboxSet(reps:Int) = run(reps)(mapMacroDeboxSet)
+  //// contains benchmark
+  //def timeContainsScalaSet(reps:Int) = run(reps)(containsScalaSet)
+  //def timeContainsJavaSet(reps:Int) = run(reps)(containsJavaSet)
+  //def timeContainsDeboxSet(reps:Int) = run(reps)(containsDeboxSet)
+  //
+  //// map benchmark
+  //def timeMapScalaSet(reps:Int) = run(reps)(mapScalaSet)
+  //def timeMapDeboxSet(reps:Int) = run(reps)(mapDeboxSet)
+  ////def timeMapMacroDeboxSet(reps:Int) = run(reps)(mapMacroDeboxSet)
 
   def timeFoldScalaSet(reps:Int) = run(reps)(foldScalaSet)
   def timeFoldDeboxSet(reps:Int) = run(reps)(foldDeboxSet)
+  //def timeFoldMacroDeboxSet(reps:Int) = run(reps)(foldMacroDeboxSet)
 
-  def timePartitionScalaSet(reps:Int) = run(reps)(partitionScalaSet)
-  def timePartitionDeboxSet(reps:Int) = run(reps)(partitionDeboxSet)
+  //def timePartitionScalaSet(reps:Int) = run(reps)(partitionScalaSet)
+  //def timePartitionDeboxSet(reps:Int) = run(reps)(partitionDeboxSet)
 
   // building benchmark
   def buildScalaSet:Int = {
@@ -127,14 +128,14 @@ class SetBenchmarks extends MyBenchmark {
     t
   }
 
-  //def foreachMacroDeboxSet:Long = {
-  //  var t = 0L
-  //  deboxSet.foreach_(n => t += 4 * n)
-  //  deboxSet.foreach_(n => t -= 2 * n)
-  //  deboxSet.foreach_(n => t += n)
-  //  deboxSet.foreach_(n => t -= 2 * n)
-  //  t
-  //}
+  def foreachMacroDeboxSet:Long = {
+    var t = 0L
+    deboxSet.foreach_(n => t += 4 * n)
+    deboxSet.foreach_(n => t -= 2 * n)
+    deboxSet.foreach_(n => t += n)
+    deboxSet.foreach_(n => t -= 2 * n)
+    t
+  }
 
   // contains benchmark
   def containsScalaSet:Long = {
@@ -197,16 +198,23 @@ class SetBenchmarks extends MyBenchmark {
   def foldScalaSet = {
     val zmin = scalaSet.foldLeft(Long.MaxValue)((x, y) => if (y < x) y else x)
     val zmax = scalaSet.foldLeft(Long.MinValue)((x, y) => if (y > x) y else x)
-    val t = scalaSet.foldLeft(0.0)((t:Double, x:Long) => t + x)
+    val t = scalaSet.foldLeft(0L)((t:Long, x:Long) => t + x)
     (zmin, zmax, t)
   }
   
   def foldDeboxSet = {
     val zmin = deboxSet.fold(Long.MaxValue)((x, y) => if (y < x) y else x)
     val zmax = deboxSet.fold(Long.MinValue)((x, y) => if (y > x) y else x)
-    val t = deboxSet.fold(0.0)((x, y) => x + y)
+    val t = deboxSet.fold(0L)((x, y) => x + y)
     (zmin, zmax, t)
   }
+
+  //def foldMacroDeboxSet = {
+  //  val zmin = deboxSet.fold_(Long.MaxValue)((x, y) => if (y < x) y else x)
+  //  val zmax = deboxSet.fold_(Long.MinValue)((x, y) => if (y > x) y else x)
+  //  val t = deboxSet.fold_(0L)((x, y) => x + y)
+  //  (zmin, zmax, t)
+  //}
 
   def partitionScalaSet = {
     val a = scalaSet.partition(_ % 2 == 0)

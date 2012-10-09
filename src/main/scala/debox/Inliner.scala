@@ -1,6 +1,4 @@
-package debox.map
-
-import debox._
+package debox
 
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
@@ -45,4 +43,3 @@ class Inliner[C <: Context with Singleton](val c:C) {
     InlineApply.transform(tree)
   }
 }
-
