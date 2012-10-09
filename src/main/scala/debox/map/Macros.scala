@@ -17,31 +17,30 @@ object Macros {
     }
   }
 
-  final def mapForeach[A, B](c:Context)(f: c.Expr[(A, B) => Unit]): c.Expr[Unit] = {
+  final def foreach[A, B](c:Context)(f: c.Expr[(A, B) => Unit]): c.Expr[Unit] = {
     import c.universe._
     val (m, eva, evb) = unpack(c)
 
-    val tree = reify {
+    val expr = reify {
       import scala.annotation.tailrec
-
+      
       val buckets = m.splice.getBuckets
       val keys = m.splice.keys
       val vals = m.splice.vals
-      @inline @tailrec def inner(i: Int, b: Int, shift: Int, count: Int): Int = {
-        if (((b >> shift) & 3) == 3) {
+      
+      @inline @tailrec
+      def loop(i: Int, count: Int, limit: Int) {
+        val c = if (buckets(i) == 3) {
           f.splice(keys(i), vals(i))
-          if (shift < 30) inner(i + 1, b, shift + 2, count + 1) else count + 1
+          count + 1
         } else {
-          if (shift < 30) inner(i + 1, b, shift + 2, count) else count
+          count
         }
+        if (c < limit) loop(c, i + 1, limit)
       }
-  
-      @inline @tailrec def outer(i: Int, k: Int, count: Int, len: Int) {
-        if (count < len) outer(i + 16, k + 1, inner(i, buckets(k), 0, count), len)
-      }
-      outer(0, 0, 0, m.splice.length)
+      loop(0, 0, m.splice.length - 1)
     }
 
-    new debox.Inliner[c.type](c).inlineAndReset(tree)
+    new debox.Inliner[c.type](c).inlineAndReset(expr)
   }
 }

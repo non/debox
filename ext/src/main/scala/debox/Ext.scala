@@ -17,7 +17,7 @@ import language.experimental.macros
 // probably good enough. 
 
 class MapMacroOps[A, B](m: Map[A, B]) {
-  def foreach_(f: (A, B) => Unit): Unit = macro Macros.mapForeach[A, B]
+  def foreach_(f: (A, B) => Unit): Unit = macro map.Macros.foreach[A, B]
 }
 
 class MapOps[A:ClassTag, B:ClassTag](m: Map[A, B]) {//extends AnyVal {

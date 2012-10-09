@@ -15,9 +15,9 @@ object Map {
    * Create an empty Map.
    */
   def empty[
-    @spec(Int, Long, Double, AnyRef) A:ClassTag:Hash,
+    @spec(Int, Long, Double, AnyRef) A:ClassTag,
     @spec(Int, Long, Double, AnyRef) B:ClassTag
-  ] = new Map(new Array[A](8), new Array[B](8), new Array[Int](1), 0, 0)
+  ] = new Map(new Array[A](8), new Array[B](8), new Array[Byte](8), 0, 0)
 
   /**
    * Create a Map preallocated to a particular size.
@@ -27,20 +27,19 @@ object Map {
    * arrays whose lengths are powers of two.
    */
   def ofDim[
-    @spec(Int, Long, Double, AnyRef) A:ClassTag:Hash,
+    @spec(Int, Long, Double, AnyRef) A:ClassTag,
     @spec(Int, Long, Double, AnyRef) B:ClassTag
   ](n:Int) = {
     val sz = Util.nextPowerOfTwo(n)
     if (sz < 1) throw new MapOverflow(n)
-    val m = (sz + 15) >> 4
-    new Map(new Array[A](sz), new Array[B](sz), new Array[Int](m), 0, 0)
+    new Map(new Array[A](sz), new Array[B](sz), new Array[Byte](sz), 0, 0)
   }
 
   /**
    * Create an empty Map.
    */
   def apply[
-    @spec(Int, Long, Double, AnyRef) A:ClassTag:Hash,
+    @spec(Int, Long, Double, AnyRef) A:ClassTag,
     @spec(Int, Long, Double, AnyRef) B:ClassTag
   ]() = empty[A, B]
 
@@ -48,7 +47,7 @@ object Map {
    * Create a map from an array of keys and another array of values.
    */
   def apply[
-    @spec(Int, Long, Double, AnyRef) A:ClassTag:Hash,
+    @spec(Int, Long, Double, AnyRef) A:ClassTag,
     @spec(Int, Long, Double, AnyRef) B:ClassTag
   ](ks:Array[A], vs:Array[B]) = {
     if (ks.length != vs.length) throw new InvalidSizes(ks.length, vs.length)
@@ -64,20 +63,20 @@ object Map {
 }
 
 final class Map[
-  @spec(Int, Long, Double, AnyRef) A:ClassTag:Hash,
+  @spec(Int, Long, Double, AnyRef) A:ClassTag,
   @spec(Int, Long, Double, AnyRef) B:ClassTag
 ] protected[debox] (
-  ks:Array[A], vs:Array[B], bs:Array[Int], n:Int, u:Int
+  ks:Array[A], vs:Array[B], bs:Array[Byte], n:Int, u:Int
 ) extends Function1[A, B] {
 
   // set internals
   var keys:Array[A] = ks // keys track set/unset
   var vals:Array[B] = vs // values mirror keys
-  var buckets:Array[Int] = bs // buckets track defined/used (2-bits per item)
+  var buckets:Array[Byte] = bs // buckets track defined/used
   var len:Int = n // number of defined items in map
   var used:Int = u // number of buckets used in map
 
-  def getBuckets: Array[Int] = buckets
+  def getBuckets: Array[Byte] = buckets
 
   // hashing internals
   var mask = keys.length - 1 // size - 1, used for hashing
@@ -88,18 +87,18 @@ final class Map[
   final def update(key:A, value:B) {
     @inline @tailrec def loop(i:Int, perturbation:Int) {
       val j = i & mask
-      val status = Util.status(buckets, j)
+      val status = buckets(j)
       if (status == 0) {
         keys(j) = key
         vals(j) = value
-        Util.set(buckets, j)
-        used += 1
+        buckets(j) = 3
         len += 1
+        used += 1
         if (used > limit) resize()
       } else if (status == 2) {
         keys(j) = key
         vals(j) = value
-        Util.set(buckets, j)
+        buckets(j) = 3
         len += 1
       } else if (keys(j) == key) {
         vals(j) = value
@@ -107,23 +106,23 @@ final class Map[
         loop((i << 2) + i + perturbation + 1, perturbation >> 5)
       }
     }
-    val i = Hash[A].hash(key) & 0x7fffffff
+    val i = key.## & 0x7fffffff
     loop(i, i)
   }
 
   final def remove(key:A) {
     @inline @tailrec def loop(i:Int, perturbation:Int) {
       val j = i & mask
-      val status = Util.status(buckets, j)
+      val status = buckets(j)
       if (status == 3 && keys(j) == key) {
-        Util.unset(buckets, j)
+        buckets(j) = 2
         len -= 1
       } else if (status == 0) {
       } else {
         loop((i << 2) + i + perturbation + 1, perturbation >> 5)
       }
     }
-    val i = Hash[A].hash(key) & 0x7fffffff
+    val i = key.## & 0x7fffffff
     loop(i, i)
   }
 
@@ -133,7 +132,7 @@ final class Map[
   final def contains(key:A):Boolean = {
     @inline @tailrec def loop(i:Int, perturbation:Int): Boolean = {
       val j = i & mask
-      val status = Util.status(buckets, j)
+      val status = buckets(j)
       if (status == 0) {
         false
       } else if (status == 3 && keys(j) == key) {
@@ -142,14 +141,14 @@ final class Map[
         loop((i << 2) + i + perturbation + 1, perturbation >> 5)
       }
     }
-    val i = Hash[A].hash(key) & 0x7fffffff
+    val i = key.## & 0x7fffffff
     loop(i, i)
   }
 
   final def apply(key:A): B = {
     @inline @tailrec def loop(i:Int, perturbation:Int): B = {
       val j = i & mask
-      val status = Util.status(buckets, j)
+      val status = buckets(j)
       if (status == 0) {
         throw new NotFound(key.toString)
       } else if (status == 3 && keys(j) == key) {
@@ -158,14 +157,14 @@ final class Map[
         loop((i << 2) + i + perturbation + 1, perturbation >> 5)
       }
     }
-    val i = Hash[A].hash(key) & 0x7fffffff
+    val i = key.## & 0x7fffffff
     loop(i, i)
   }
 
   final def get(key:A):Option[B] = {
     @inline @tailrec def loop(i:Int, perturbation:Int): Option[B] = {
       val j = i & mask
-      val status = Util.status(buckets, j)
+      val status = buckets(j)
       if (status == 0) {
         None
       } else if (status == 3 && keys(j) == key) {
@@ -174,40 +173,38 @@ final class Map[
         loop((i << 2) + i + perturbation + 1, perturbation >> 5)
       }
     }
-    val i = Hash[A].hash(key) & 0x7fffffff
+    val i = key.## & 0x7fffffff
     loop(i, i)
   }
 
   final def foreach(f: (A, B) => Unit) {
-    @inline @tailrec def inner(i: Int, b: Int, shift: Int, count: Int): Int = {
-      if (((b >> shift) & 3) == 3) {
+    @inline @tailrec
+    def loop(i: Int, count: Int, limit: Int) {
+      val c = if (buckets(i) == 3) {
         f(keys(i), vals(i))
-        if (shift < 30) inner(i + 1, b, shift + 2, count + 1) else count + 1
+        count + 1
       } else {
-        if (shift < 30) inner(i + 1, b, shift + 2, count) else count
+        count
       }
+      if (c < limit) loop(c, i + 1, limit)
     }
-
-    @inline @tailrec def outer(i: Int, k: Int, count: Int, len: Int) {
-      if (count < len) outer(i + 16, k + 1, inner(i, buckets(k), 0, count), len)
-    }
-    outer(0, 0, 0, len)
+    loop(0, 0, length - 1)
   }
 
-  final def hash(key:A, _mask:Int, _keys:Array[A], _buckets:Array[Int]):Int = {
-    @inline @tailrec def loop(i:Int, perturbation:Int): Int = {
+  final def hash(item:A, _mask:Int, _keys:Array[A], _buckets:Array[Byte]):Int = {
+    @inline @tailrec
+    def loop(i:Int, perturbation:Int): Int = {
       val j = i & _mask
-      if (Util.status(_buckets, j) == 3 && _keys(j) != key) {
+      if (_buckets(j) == 3 && _keys(j) != item)
         loop((i << 2) + i + perturbation + 1, perturbation >> 5)
-      } else {
+      else
         j
-      }
     }
-    val i = Hash[A].hash(key) & 0x7fffffff
+    val i = item.## & 0x7fffffff
     loop(i, i)
   }
 
-  final def resize(): Unit2[A, B] = {
+  final def resize(): Unit1[A] = {
     val size = keys.length
     val factor = if (size < 10000) 4 else 2
     
@@ -215,33 +212,27 @@ final class Map[
     val nextmask = nextsize - 1
     val nextkeys = new Array[A](nextsize)
     val nextvals = new Array[B](nextsize)
-    val nextbs = new Array[Int]((nextsize + 15) >> 4)
+    val nextbs = new Array[Byte](nextsize)
 
-    @inline @tailrec def inner(i: Int, b: Int, shift: Int, count: Int): Int = {
-      if (((b >> shift) & 3) == 3) {
-        val key = keys(i)
-        val j = hash(key, nextmask, nextkeys, nextbs)
-        nextkeys(j) = key
+    @inline @tailrec
+    def loop(i: Int, limit: Int) {
+      if (buckets(i) == 3) {
+        val item = keys(i)
+        val j = hash(item, nextmask, nextkeys, nextbs)
+        nextkeys(j) = item
         nextvals(j) = vals(i)
-        Util.set(nextbs, j)
-        if (shift < 30) inner(i + 1, b, shift + 2, count + 1) else count + 1
-      } else {
-        if (shift < 30) inner(i + 1, b, shift + 2, count) else count
+        nextbs(j) = 3
       }
+      if (i < limit) loop(i + 1, limit)
     }
-
-    @inline @tailrec def outer(i: Int, k: Int, count: Int, len: Int) {
-      if (count < len) outer(i + 16, k + 1, inner(i, buckets(k), 0, count), len)
-    }
-    outer(0, 0, 0, len)
+    loop(0, keys.length - 1)
 
     keys = nextkeys
     vals = nextvals
     buckets = nextbs
-
     mask = nextmask
     limit *= factor
 
-    new Unit2[A, B]
+    new Unit1[A]
   }
 }
