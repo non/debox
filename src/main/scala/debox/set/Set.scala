@@ -67,22 +67,20 @@ final class Set[
     def loop(i:Int, perturbation:Int): Boolean = {
       val j = i & mask
       val status = buckets(j)
-      if (status == 0) {
-        items(j) = item
-        buckets(j) = 3
-        len += 1
-        used += 1
-        if (used > limit) resize()
-        true
-      } else if (status == 2) {
-        items(j) = item
-        buckets(j) = 3
-        len += 1
-        true
-      } else if (items(j) == item) {
-        false
+      if (status == 3) {
+        if (items(j) == item)
+          false
+        else
+          loop((i << 2) + i + perturbation + 1, perturbation >> 5)
       } else {
-        loop((i << 2) + i + perturbation + 1, perturbation >> 5)
+        items(j) = item
+        buckets(j) = 3
+        len += 1
+        if (status == 0) {
+          used += 1
+          if (used > limit) resize()
+        }
+        true
       }
     }
     val i = item.## & 0x7fffffff
@@ -133,19 +131,22 @@ final class Set[
     out
   }
 
-  final def foreach(f: A => Unit) {
+  def foreach(f: A => Unit) {
     @inline @tailrec
-    def loop(i: Int, count: Int, len: Int) {
-      if (count < len) {
-        if (buckets(i) == 3) {
-          f(items(i))
-          loop(i + 1, count + 1, len)
-        } else {
-          loop(i + 1, count, len)
-        }
-      }
+    def loop(i: Int, count: Int, limit: Int) {
+      val c = if (buckets(i) == 3) { f(items(i)); count + 1 } else count
+      if (c < limit) loop(c, i + 1, limit)
     }
-    loop(0, 0, length)
+    loop(0, 0, length - 1)
+  }
+
+  def fold[@spec(Int, Long, Double, AnyRef) B](init: B)(f: (B, A) => B) = {
+    @inline @tailrec
+    def loop(b: B, i: Int, limit: Int) {
+      val bb = if (buckets(i) == 3) f(b, items(i)) else b
+      if (i < limit) loop(bb, i + 1, limit)
+    }
+    loop(init, 0, items.length - 1)
   }
 
   final def hash(item:A, _mask:Int, _items:Array[A], _buckets:Array[Byte]):Int = {
@@ -171,20 +172,16 @@ final class Set[
     val nextbs = new Array[Byte](nextsize)
 
     @inline @tailrec
-    def loop(i: Int, count: Int, len: Int) {
-      if (count < len) {
-        if (buckets(i) == 3) {
-          val item = items(i)
-          val j = hash(item, nextmask, nextitems, nextbs)
-          nextitems(j) = item
-          nextbs(j) = 3
-          loop(i + 1, count + 1, len)
-        } else {
-          loop(i + 1, count, len)
-        }
+    def loop(i: Int, limit: Int) {
+      if (buckets(i) == 3) {
+        val item = items(i)
+        val j = hash(item, nextmask, nextitems, nextbs)
+        nextitems(j) = item
+        nextbs(j) = 3
       }
+      if (i < limit) loop(i + 1, limit)
     }
-    loop(0, 0, length)
+    loop(0, items.length - 1)
 
     items = nextitems
     buckets = nextbs
@@ -194,25 +191,69 @@ final class Set[
     new Unit1[A]
   }
 
-  //def union(that: Set[A]): Set[A] = {
-  //  if (length > that.length) return that.union(this)
-  //  val out = that.copy
-  //  foreach(out.add)
-  //  out
-  //}
-  //
-  //def intersection(that: Set[A]): Set[A] = {
-  //  if (length < that.length) return that.intersection(this)
-  //  val out = Set.empty[A]
-  //  foreach(a => if (that(a)) out.add(a))
-  //  out
-  //}
-  //
-  //def difference(that: Set[A]): Set[A] = {
-  //  val out = Set.empty[A]
-  //  foreach(a => if (!that(a)) out.add(a))
-  //  out
-  //}
-  //
-  //def extend(that: Set[A]): Unit = foreach(add)
+  def union(that: Set[A]): Set[A] = {
+    if (length > that.length) return that.union(this)
+    val out = that.copy
+    foreach(out.add)
+    out
+  }
+  
+  def intersection(that: Set[A]): Set[A] = {
+    if (length < that.length) return that.intersection(this)
+    val out = Set.empty[A]
+    foreach(a => if (that(a)) out.add(a))
+    out
+  }
+  
+  def difference(that: Set[A]): Set[A] = {
+    val out = Set.empty[A]
+    foreach(a => if (!that(a)) out.add(a))
+    out
+  }
+  
+  def extend(that: Set[A]): Unit = foreach(add)
+
+  def count(p: A => Boolean) = fold(0)((n, a) => if (p(a)) n + 1 else n)
+
+  def forall(p: A => Boolean) = loopWhile(p) == -1
+
+  def exists(p: A => Boolean) = loopUntil(p) != -1
+
+  def find(p: A => Boolean): Option[A] = {
+    val i = loopUntil(p)
+    if (i < 0) None else Some(items(i))
+  }
+
+  def findAll(p: A => Boolean): Set[A] = {
+    val out = Set.empty[A]
+    foreach(a => if (p(a)) out.add(a))
+    out
+  }
+
+  def partition(p: A => Boolean): (Set[A], Set[A]) = {
+    val no = Set.empty[A]
+    val yes = Set.empty[A]
+    foreach(a => if (p(a)) yes.add(a) else no.add(a))
+    (no, yes)
+  }
+
+  def loopWhile(p: A => Boolean): Int = {
+    @inline @tailrec
+    def loop(i: Int, limit: Int): Int = {
+      if (buckets(i) == 3 && !p(items(i))) i
+      else if (i < limit) loop(i + 1, limit)
+      else -1
+    }
+    loop(0, items.length - 1)
+  }
+
+  def loopUntil(p: A => Boolean): Int = {
+    @inline @tailrec
+    def loop(i: Int, limit: Int): Int = {
+      if (buckets(i) == 3 && p(items(i))) i
+      else if (i < limit) loop(i + 1, limit)
+      else -1
+    }
+    loop(0, items.length - 1)
+  }
 }

@@ -15,7 +15,8 @@ import debox.Ext._
 object SetBenchmarks extends MyRunner(classOf[SetBenchmarks])
 
 class SetBenchmarks extends MyBenchmark {
-  @Param(Array("6", "8", "11", "14", "17", "20"))
+  //@Param(Array("6", "8", "11", "14", "17", "20"))
+  @Param(Array("11"))
   var pow:Int = 0
 
   var data:Array[Long] = null
@@ -67,8 +68,11 @@ class SetBenchmarks extends MyBenchmark {
   def timeMapDeboxSet(reps:Int) = run(reps)(mapDeboxSet)
   //def timeMapMacroDeboxSet(reps:Int) = run(reps)(mapMacroDeboxSet)
 
-  //def timeFoldScalaSet(reps:Int) = run(reps)(foldScalaSet)
-  //def timeFoldDeboxSet(reps:Int) = run(reps)(foldDeboxSet)
+  def timeFoldScalaSet(reps:Int) = run(reps)(foldScalaSet)
+  def timeFoldDeboxSet(reps:Int) = run(reps)(foldDeboxSet)
+
+  def timePartitionScalaSet(reps:Int) = run(reps)(partitionScalaSet)
+  def timePartitionDeboxSet(reps:Int) = run(reps)(partitionDeboxSet)
 
   // building benchmark
   def buildScalaSet:Int = {
@@ -190,17 +194,31 @@ class SetBenchmarks extends MyBenchmark {
   //  (a, b, c)
   //}
 
-  //def foldScalaSet = {
-  //  val zmin = scalaSet.foldLeft(Long.MaxValue)((x, y) => if (y < x) y else x)
-  //  val zmax = scalaSet.foldLeft(Long.MinValue)((x, y) => if (y > x) y else x)
-  //  val t = scalaSet.foldLeft(0.0)((t:Double, x:Long) => t + x)
-  //  (zmin, zmax, t)
-  //}
-  //
-  //def foldDeboxSet = {
-  //  val zmin = deboxSet.fold(Long.MaxValue)((x, y) => if (y < x) y else x)
-  //  val zmax = deboxSet.fold(Long.MinValue)((x, y) => if (y > x) y else x)
-  //  val t = deboxSet.fold(0.0)((x, y) => x + y)
-  //  (zmin, zmax, t)
-  //}
+  def foldScalaSet = {
+    val zmin = scalaSet.foldLeft(Long.MaxValue)((x, y) => if (y < x) y else x)
+    val zmax = scalaSet.foldLeft(Long.MinValue)((x, y) => if (y > x) y else x)
+    val t = scalaSet.foldLeft(0.0)((t:Double, x:Long) => t + x)
+    (zmin, zmax, t)
+  }
+  
+  def foldDeboxSet = {
+    val zmin = deboxSet.fold(Long.MaxValue)((x, y) => if (y < x) y else x)
+    val zmax = deboxSet.fold(Long.MinValue)((x, y) => if (y > x) y else x)
+    val t = deboxSet.fold(0.0)((x, y) => x + y)
+    (zmin, zmax, t)
+  }
+
+  def partitionScalaSet = {
+    val a = scalaSet.partition(_ % 2 == 0)
+    val b = scalaSet.partition(_ % 3 == 0)
+    val c = scalaSet.partition(_ % 5 == 0)
+    (a, b, c)
+  }
+  
+  def partitionDeboxSet = {
+    val a = deboxSet.partition(_ % 2 == 0)
+    val b = deboxSet.partition(_ % 3 == 0)
+    val c = deboxSet.partition(_ % 5 == 0)
+    (a, b, c)
+  }
 }
