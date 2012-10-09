@@ -1,25 +1,27 @@
-package debox
+package debox.map
 
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
 import scala.reflect.macros.Context
 import scala.{specialized => spec}
 
-import debox.map.Map
-import debox.set.Set
-
 import language.experimental.macros
 
 object Macros {
-  final def mapForeach[A, B](c:Context)(f: c.Expr[(A, B) => Unit]): c.Expr[Unit] = {
+  def unpack[A, B](c:Context) = {
     import c.universe._
-    val m = c.prefix.tree match {
-      case Apply(Apply(TypeApply(_, _), List(m)), _) => c.Expr[Map[A, B]](m)
-      //case Apply(TypeApply(_, _), List(m)) => c.Expr[Map[A, B]](m)
+    c.prefix.tree match {
+      case Apply(Apply(TypeApply(_, _), List(m)), List(eva, evb)) =>
+        (c.Expr[Map[A, B]](m), c.Expr[ClassTag[A]](eva), c.Expr[ClassTag[B]](evb))
       case t => sys.error("bad tree %s" format t)
     }
+  }
 
-    val tree = c.universe.reify {
+  final def mapForeach[A, B](c:Context)(f: c.Expr[(A, B) => Unit]): c.Expr[Unit] = {
+    import c.universe._
+    val (m, eva, evb) = unpack(c)
+
+    val tree = reify {
       import scala.annotation.tailrec
 
       val buckets = m.splice.getBuckets
