@@ -80,17 +80,17 @@ object Util {
    * In these cases, a previous collision still needs to be maintained (for
    * look up), although for inserting new keys, the bucket can be used.
    */
-  final def status(bs: Array[Int], i:Int): Int = shifted(bs, i) & 3
+  @inline final def status(bs: Array[Int], i:Int): Int = shifted(bs, i) & 3
 
   /**
    * Mark bucket 'i' as in-use (3).
    */
-  final def set(bs: Array[Int], i:Int):Unit = ored(bs, i, 3 << shift(i))
+  @inline final def set(bs: Array[Int], i:Int):Unit = ored(bs, i, 3 << shift(i))
 
   /**
    * Unmark bucket 'i' (unset the 1 bit, so 3 => 2, 0 => 0).
    */
-  final def unset(bs: Array[Int], i:Int):Unit = anded(bs, i, ~(1 << shift(i)))
+  @inline final def unset(bs: Array[Int], i:Int):Unit = anded(bs, i, ~(1 << shift(i)))
 
   def nextPowerOfTwo(n: Int): Int = {
     val x = java.lang.Integer.highestOneBit(n)
