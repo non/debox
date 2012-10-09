@@ -2,7 +2,7 @@ package debox.set
 
 import debox._
 
-import scala.annotation.tailrec
+import scala.annotation.{switch, tailrec}
 import scala.reflect.ClassTag
 import scala.{specialized => spec}
 
@@ -12,15 +12,14 @@ class SetOverflow(n: Int) extends Exception("size %s exceeds max" format n)
 object Set {
   def empty[
     @spec(Int, Long, Double, AnyRef) A:ClassTag
-  ] = new Set(new Array[A](8), new Array[Int](1), 0, 0)
+  ] = new Set(new Array[A](8), new Array[Byte](8), 0, 0)
 
   def ofDim[
     @spec(Int, Long, Double, AnyRef) A:ClassTag
   ](n:Int) = {
     val sz = Util.nextPowerOfTwo(n)
     if (sz < 1) throw new SetOverflow(n)
-    val m = (sz + 15) >> 4
-    new Set(new Array[A](sz), new Array[Int](m), 0, 0)
+    new Set(new Array[A](sz), new Array[Byte](sz), 0, 0)
   }
 
   def apply[
@@ -32,7 +31,8 @@ object Set {
   ](as:Array[A]) = {
     val set = ofDim[A](as.length)
     val limit = as.length - 1
-    @inline @tailrec def loop(i:Int) {
+    @inline @tailrec
+    def loop(i:Int) {
       set.add(as(i))
       if (i < limit) loop(i + 1)
     }
@@ -44,15 +44,15 @@ object Set {
 final class Set[
   @spec(Int, Long, Double, AnyRef) A:ClassTag
 ] protected[debox] (
-  as:Array[A], bs:Array[Int], n:Int, u:Int
+  as:Array[A], bs:Array[Byte], n:Int, u:Int
 ) extends Function1[A, Boolean] {
 
   var items:Array[A] = as
-  var buckets:Array[Int] = bs
+  var buckets:Array[Byte] = bs
   var len:Int = n
   var used:Int = u
 
-  def getBuckets: Array[Int] = buckets
+  def getBuckets: Array[Byte] = buckets
 
   // hashing internals
   var mask = items.length - 1 // size-1, used for hashing
@@ -63,19 +63,20 @@ final class Set[
   final def update(item:A, b:Boolean) = if (b) add(item) else remove(item)
 
   final def add(item:A):Boolean = {
-    @inline @tailrec def loop(i:Int, perturbation:Int): Boolean = {
+    @inline @tailrec
+    def loop(i:Int, perturbation:Int): Boolean = {
       val j = i & mask
-      val status = Util.status(buckets, j)
+      val status = buckets(j)
       if (status == 0) {
         items(j) = item
-        Util.set(buckets, j)
-        used += 1
+        buckets(j) = 3
         len += 1
+        used += 1
         if (used > limit) resize()
         true
       } else if (status == 2) {
         items(j) = item
-        Util.set(buckets, j)
+        buckets(j) = 3
         len += 1
         true
       } else if (items(j) == item) {
@@ -89,11 +90,12 @@ final class Set[
   }
 
   final def remove(item:A):Boolean = {
-    @inline @tailrec def loop(i:Int, perturbation:Int): Boolean = {
+    @inline @tailrec
+    def loop(i:Int, perturbation:Int): Boolean = {
       val j = i & mask
-      val status = Util.status(buckets, j)
+      val status = buckets(j)
       if (status == 3 && items(j) == item) {
-        Util.unset(buckets, j)
+        buckets(j) = 2
         len -= 1
         true
       } else if (status == 0) {
@@ -109,9 +111,10 @@ final class Set[
   final def copy:Set[A] = new Set(items.clone, buckets.clone, len, used)
 
   final def apply(item:A):Boolean = {
-    @inline @tailrec def loop(i:Int, perturbation:Int): Boolean = {
+    @inline @tailrec
+    def loop(i:Int, perturbation:Int): Boolean = {
       val j = i & mask
-      val status = Util.status(buckets, j)
+      val status = buckets(j)
       if (status == 0) {
         false
       } else if (status == 3 && items(j) == item) {
@@ -131,29 +134,28 @@ final class Set[
   }
 
   final def foreach(f: A => Unit) {
-    @inline @tailrec def inner(i: Int, b: Int, shift: Int, count: Int): Int = {
-      if (((b >> shift) & 3) == 3) {
-        f(items(i))
-        if (shift < 30) inner(i + 1, b, shift + 2, count + 1) else count + 1
-      } else {
-        if (shift < 30) inner(i + 1, b, shift + 2, count) else count
+    @inline @tailrec
+    def loop(i: Int, count: Int, len: Int) {
+      if (count < len) {
+        if (buckets(i) == 3) {
+          f(items(i))
+          loop(i + 1, count + 1, len)
+        } else {
+          loop(i + 1, count, len)
+        }
       }
     }
-
-    @inline @tailrec def outer(i: Int, k: Int, count: Int, len: Int) {
-      if (count < len) outer(i + 16, k + 1, inner(i, buckets(k), 0, count), len)
-    }
-    outer(0, 0, 0, len)
+    loop(0, 0, length)
   }
 
-  final def hash(item:A, _mask:Int, _items:Array[A], _buckets:Array[Int]):Int = {
-    @inline @tailrec def loop(i:Int, perturbation:Int): Int = {
+  final def hash(item:A, _mask:Int, _items:Array[A], _buckets:Array[Byte]):Int = {
+    @inline @tailrec
+    def loop(i:Int, perturbation:Int): Int = {
       val j = i & _mask
-      if (Util.status(_buckets, j) == 3 && _items(j) != item) {
+      if (_buckets(j) == 3 && _items(j) != item)
         loop((i << 2) + i + perturbation + 1, perturbation >> 5)
-      } else {
+      else
         j
-      }
     }
     val i = item.## & 0x7fffffff
     loop(i, i)
@@ -166,53 +168,51 @@ final class Set[
     val nextsize = size * factor
     val nextmask = nextsize - 1
     val nextitems = new Array[A](nextsize)
-    val nextbs = new Array[Int]((nextsize + 15) >> 4)
+    val nextbs = new Array[Byte](nextsize)
 
-    @inline @tailrec def inner(i: Int, b: Int, shift: Int, count: Int): Int = {
-      if (((b >> shift) & 3) == 3) {
-        val item = items(i)
-        val j = hash(item, nextmask, nextitems, nextbs)
-        nextitems(j) = item
-        Util.set(nextbs, j)
-        if (shift < 30) inner(i + 1, b, shift + 2, count + 1) else count + 1
-      } else {
-        if (shift < 30) inner(i + 1, b, shift + 2, count) else count
+    @inline @tailrec
+    def loop(i: Int, count: Int, len: Int) {
+      if (count < len) {
+        if (buckets(i) == 3) {
+          val item = items(i)
+          val j = hash(item, nextmask, nextitems, nextbs)
+          nextitems(j) = item
+          nextbs(j) = 3
+          loop(i + 1, count + 1, len)
+        } else {
+          loop(i + 1, count, len)
+        }
       }
     }
-
-    @inline @tailrec def outer(i: Int, k: Int, count: Int, len: Int) {
-      if (count < len) outer(i + 16, k + 1, inner(i, buckets(k), 0, count), len)
-    }
-    outer(0, 0, 0, len)
+    loop(0, 0, length)
 
     items = nextitems
     buckets = nextbs
-
     mask = nextmask
     limit *= factor
 
     new Unit1[A]
   }
 
-  def union(that: Set[A]): Set[A] = {
-    if (length > that.length) return that.union(this)
-    val out = that.copy
-    foreach(out.add)
-    out
-  }
-  
-  def intersection(that: Set[A]): Set[A] = {
-    if (length < that.length) return that.intersection(this)
-    val out = Set.empty[A]
-    foreach(a => if (that(a)) out.add(a))
-    out
-  }
-  
-  def difference(that: Set[A]): Set[A] = {
-    val out = Set.empty[A]
-    foreach(a => if (!that(a)) out.add(a))
-    out
-  }
-
-  def extend(that: Set[A]): Unit = foreach(add)
+  //def union(that: Set[A]): Set[A] = {
+  //  if (length > that.length) return that.union(this)
+  //  val out = that.copy
+  //  foreach(out.add)
+  //  out
+  //}
+  //
+  //def intersection(that: Set[A]): Set[A] = {
+  //  if (length < that.length) return that.intersection(this)
+  //  val out = Set.empty[A]
+  //  foreach(a => if (that(a)) out.add(a))
+  //  out
+  //}
+  //
+  //def difference(that: Set[A]): Set[A] = {
+  //  val out = Set.empty[A]
+  //  foreach(a => if (!that(a)) out.add(a))
+  //  out
+  //}
+  //
+  //def extend(that: Set[A]): Unit = foreach(add)
 }
