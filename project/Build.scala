@@ -4,7 +4,7 @@ import sbt.Keys._
 object MyBuild extends Build {
   override lazy val settings = super.settings ++ Seq(
     name := "debox",
-    version := "0.1.0",
+    version := "0.1.1",
     scalaVersion := "2.10.0-M7",
 
     scalacOptions ++= Seq(
