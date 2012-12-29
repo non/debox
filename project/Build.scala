@@ -5,7 +5,9 @@ object MyBuild extends Build {
   override lazy val settings = super.settings ++ Seq(
     name := "debox",
     version := "0.1.1",
-    scalaVersion := "2.10.0-M7",
+
+    scalaVersion := "2.10.0",
+    scalaBinaryVersion := "2.10.0",
 
     scalacOptions ++= Seq(
       "-Xlog-free-terms",
@@ -18,8 +20,8 @@ object MyBuild extends Build {
     ),
 
     libraryDependencies ++= Seq(
-      "org.scala-lang" % "scala-reflect" % "2.10.0-M7",
-      "org.scalatest" % "scalatest_2.10.0-M7" % "1.9-2.10.0-M7-B1" % "test"
+      "org.scalatest" % "scalatest_2.10.0" % "1.8" % "test",
+      "org.scala-lang" % "scala-reflect" % "2.10.0"
     )
   )
 

@@ -6,7 +6,8 @@ import scala.{specialized => spec}
 
 import language.experimental.macros
 
-import scala.reflect.{ClassTag, TypeTag}
+//import scala.reflect.{ClassTag, TypeTag}
+import scala.reflect.ClassTag
 import scala.reflect.macros.Context
 
 object Util {
@@ -37,7 +38,7 @@ object Util {
    *     arr
    *   }
    */
-  def arrayMacro[A:c.AbsTypeTag](c:Context)(as:c.Expr[A]*): c.Expr[Array[A]] = {
+  def arrayMacro[A:c.WeakTypeTag](c:Context)(as:c.Expr[A]*): c.Expr[Array[A]] = {
     import c.mirror._
     import c.universe._
     def const(x:Int) = Literal(Constant(x))
@@ -46,11 +47,11 @@ object Util {
     val arr = newTermName("arr")
 
     val mod = Ident(staticModule("scala.reflect.ClassTag"))
-    val att = implicitly[c.AbsTypeTag[A]]
+    val att = implicitly[c.WeakTypeTag[A]]
     val ct = Apply(mod, List(c.reifyRuntimeClass(att.tpe)))
 
     val create = Apply(Select(ct, "newArray"), List(const(n)))
-    val arrtpe = TypeTree(implicitly[c.AbsTypeTag[Array[A]]].tpe)
+    val arrtpe = TypeTree(implicitly[c.WeakTypeTag[Array[A]]].tpe)
     val valdef = ValDef(Modifiers(), arr, arrtpe, create)
 
     val updates = (0 until n).map {
