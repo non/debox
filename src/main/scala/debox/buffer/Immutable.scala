@@ -23,7 +23,7 @@ trait Immutable[@spec A] extends Buffer[A] {
   def toImmutableUnsafe = this
   def toMutable = Mutable.unsafe(toArray)
   def toMutableUnsafe = Mutable.unsafe(toArray)
-  def toLazy:Lazy[A, _] = new Lazy(this)(n => n)
+  def toLazy:Lazy[A, _] = new Lazy[A, A](this)(identity)
   def slice(i:Int, j:Int):Immutable[A]
   def reverse:Immutable[A]
 }
@@ -68,5 +68,5 @@ final class Lazy[@spec A, @spec U](us:Immutable[U])(f:U => A)(implicit val manif
   def reverse = new Lazy(us.reverse)(f)
   def apply(i:Int) = f(us(i))
   def get(i:Int) = us.get(i).map(f)
-  def map[@spec B:ClassTag](f:A => B) = new Lazy(us)(u => f(this.f(u)))
+  def map[@spec B:ClassTag](g:A => B) = new Lazy(us)(u => g(f(u)))
 }
