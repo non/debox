@@ -10,14 +10,18 @@ object Mutable {
   def safe[@spec A:ClassTag](as:Array[A]) = new Mutable(as.clone, as.length)
   def unsafe[@spec A:ClassTag](as:Array[A]) = new Mutable(as, as.length)
   def apply[@spec A:ClassTag](as:Array[A]) = unsafe(as)
-  def empty[@spec A:ClassTag] = unsafe(Array.empty[A])
+  //def empty[@spec A:ClassTag] = unsafe(Array.empty[A])
+  def empty[@spec A:ClassTag] = ofDim[A](16)
   def ofDim[@spec A:ClassTag](n:Int) = unsafe(new Array[A](n))
   def fill[@spec A:ClassTag](n:Int)(a:A) = unsafe(Array.fill(n)(a))
 }
 
-final class Mutable[@spec A:ClassTag](as:Array[A], n:Int) extends Buffer[A] {
-  protected[this] var elems:Array[A] = as
-  protected[this] var len:Int = n
+final class Mutable[@spec A:ClassTag](
+  as:Array[A],
+  n:Int
+) extends Buffer[A] {
+  private[this] var elems:Array[A] = as
+  private[this] var len:Int = n
 
   def unsafeArray = elems
 
@@ -45,18 +49,36 @@ final class Mutable[@spec A:ClassTag](as:Array[A], n:Int) extends Buffer[A] {
   def toMutable = new Mutable(as.clone, n)
   def toMutableUnsafe = this
 
-  protected[this] def resizeIfNecessary(n:Int):Unit = {
-    val x = elems.length
-    if (len + n > x) {
-      val x2 = if (x < 4) 8 else if (x <= 0x3fffffff) x * 2 else Int.MaxValue
-      val as = new Array[A](x2)
-      System.arraycopy(elems, 0, as, 0, len)
-      elems = as
-    }
+  @inline private[this] final def resizeIfNecessary(n:Int):Unit = if (len + n > elems.length) {
+    var x = elems.length << 1
+    if (x < 0) x = Int.MaxValue
+    val as = new Array[A](x)
+    System.arraycopy(elems, 0, as, 0, len)
+    elems = as
   }
 
-  def append(a:A):Unit = insert(len, a)
-  def prepend(a:A):Unit = insert(0, a)
+  private final def nextSize(x: Int): Int = {
+    var n = x << 1
+    if (n < 0) Int.MaxValue else n
+  }
+
+  def append(a:A):Unit = {
+    var es = elems
+    val n = len
+    if (n >= es.length) {
+      es = new Array[A](nextSize(n))
+      System.arraycopy(es, 0, as, 0, n)
+      elems = es
+    }
+    es(n) = a
+    len = n + 1
+  }
+  def prepend(a:A):Unit = {
+    resizeIfNecessary(1)
+    System.arraycopy(elems, 0, elems, 1, len)
+    elems(0) = a
+    len += 1
+  }
   def insert(i:Int, a:A):Unit = {
     resizeIfNecessary(1)
     System.arraycopy(elems, i, elems, i + 1, len - i)
