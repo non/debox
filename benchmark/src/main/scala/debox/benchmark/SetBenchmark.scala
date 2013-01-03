@@ -47,26 +47,26 @@ class SetBenchmarks extends MyBenchmark {
     }
   }
 
-  //// building benchmark
-  //def timeBuildScalaSet(reps:Int) = run(reps)(buildScalaSet)
-  //def timeBuildJavaSet(reps:Int) = run(reps)(buildJavaSet)
-  //def timeBuildDeboxSet(reps:Int) = run(reps)(buildDeboxSet)
+  // building benchmark
+  def timeBuildScalaSet(reps:Int) = run(reps)(buildScalaSet)
+  def timeBuildJavaSet(reps:Int) = run(reps)(buildJavaSet)
+  def timeBuildDeboxSet(reps:Int) = run(reps)(buildDeboxSet)
   
-  //// foreach benchmark
-  //def timeForeachScalaSet(reps:Int) = run(reps)(foreachScalaSet)
-  //def timeForeachJavaSet(reps:Int) = run(reps)(foreachScalaSet)
-  //def timeForeachDeboxSet(reps:Int) = run(reps)(foreachDeboxSet)
-  //def timeForeachMacroDeboxSet(reps:Int) = run(reps)(foreachMacroDeboxSet)
+  // foreach benchmark
+  def timeForeachScalaSet(reps:Int) = run(reps)(foreachScalaSet)
+  def timeForeachJavaSet(reps:Int) = run(reps)(foreachScalaSet)
+  def timeForeachDeboxSet(reps:Int) = run(reps)(foreachDeboxSet)
+  def timeForeachMacroDeboxSet(reps:Int) = run(reps)(foreachMacroDeboxSet)
   
-  //// contains benchmark
-  //def timeContainsScalaSet(reps:Int) = run(reps)(containsScalaSet)
-  //def timeContainsJavaSet(reps:Int) = run(reps)(containsJavaSet)
-  //def timeContainsDeboxSet(reps:Int) = run(reps)(containsDeboxSet)
-  //
-  //// map benchmark
-  //def timeMapScalaSet(reps:Int) = run(reps)(mapScalaSet)
-  //def timeMapDeboxSet(reps:Int) = run(reps)(mapDeboxSet)
-  ////def timeMapMacroDeboxSet(reps:Int) = run(reps)(mapMacroDeboxSet)
+  // contains benchmark
+  def timeContainsScalaSet(reps:Int) = run(reps)(containsScalaSet)
+  def timeContainsJavaSet(reps:Int) = run(reps)(containsJavaSet)
+  def timeContainsDeboxSet(reps:Int) = run(reps)(containsDeboxSet)
+  
+  // map benchmark
+  def timeMapScalaSet(reps:Int) = run(reps)(mapScalaSet)
+  def timeMapDeboxSet(reps:Int) = run(reps)(mapDeboxSet)
+  //def timeMapMacroDeboxSet(reps:Int) = run(reps)(mapMacroDeboxSet)
 
   def timeFoldScalaSet(reps:Int) = run(reps)(foldScalaSet)
   def timeFoldDeboxSet(reps:Int) = run(reps)(foldDeboxSet)
