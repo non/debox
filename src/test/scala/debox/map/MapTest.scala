@@ -77,4 +77,18 @@ class MapTest extends FunSuite {
     assert(m.contains(11) === false)
     assert(m.contains(100) === false)
   }
+
+  test("foreach") {
+    val m = Map.empty[Int, Int]
+    val is = Vector.fill(10)(scala.util.Random.nextInt)
+
+    is.foreach { i => m.update(i, i) }
+
+    assert(m.length == 10)
+
+    var sum = 0
+    m.foreach { (_, v) => sum += v }
+
+    assert(sum == is.sum)
+  }
 }
