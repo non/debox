@@ -66,4 +66,18 @@ class SetTest extends FunSuite {
     data.foreach(n => set2.add(n))
     assert(set2.length == 32)
   }
+
+  test ("Set[Int] foreach") {
+    val set = Set.empty[Int]
+    val is = Vector.fill(10)(scala.util.Random.nextInt)
+
+    is.foreach(set.add)
+
+    assert(set.length == 10)
+
+    var sum = 0
+    set.foreach(sum += _)
+
+    assert(sum == is.sum)
+  }
 }
