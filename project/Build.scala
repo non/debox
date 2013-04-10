@@ -7,7 +7,7 @@ object MyBuild extends Build {
     version := "0.1.1",
 
     scalaVersion := "2.10.0",
-    scalaBinaryVersion := "2.10.0",
+    scalaBinaryVersion := "2.10",
 
     scalacOptions ++= Seq(
       "-Xlog-free-terms",
