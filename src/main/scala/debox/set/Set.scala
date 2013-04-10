@@ -124,7 +124,7 @@ final class Set[@spec A:ClassTag] protected[debox]
     @inline @tailrec
     def loop(i: Int, count: Int, limit: Int) {
       val c = if (buckets(i) == 3) { f(items(i)); count + 1 } else count
-      if (c < limit) loop(c, i + 1, limit)
+      if (c <= limit) loop(i + 1, c, limit)
     }
     loop(0, 0, length - 1)
   }
