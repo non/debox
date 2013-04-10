@@ -186,7 +186,7 @@ final class Map[
       } else {
         count
       }
-      if (c < limit) loop(c, i + 1, limit)
+      if (c <= limit) loop(i + 1, c, limit)
     }
     loop(0, 0, length - 1)
   }
