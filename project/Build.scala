@@ -4,10 +4,13 @@ import sbt.Keys._
 object MyBuild extends Build {
   override lazy val settings = super.settings ++ Seq(
     name := "debox",
-    version := "0.1.1",
+    version := "0.2.0",
 
-    scalaVersion := "2.10.0",
-    scalaBinaryVersion := "2.10.0",
+    scalaVersion := "2.10.2",
+    //scalaBinaryVersion := "2.10.0",
+
+    resolvers += Resolver.sonatypeRepo("snapshots"),
+    addCompilerPlugin("org.scala-lang.plugins" % "macro-paradise_2.10.2" % "2.0.0-SNAPSHOT"),
 
     scalacOptions ++= Seq(
       "-Xlog-free-terms",
@@ -20,14 +23,17 @@ object MyBuild extends Build {
     ),
 
     libraryDependencies ++= Seq(
-      "org.scalatest" % "scalatest_2.10.0" % "1.8" % "test",
-      "org.scala-lang" % "scala-reflect" % "2.10.0"
+      "org.spire-math" %% "spire" % "0.6.0",
+      "org.scalatest" %% "scalatest" % "1.9.1" % "test",
+      "org.scala-lang" % "scala-reflect" % "2.10.2"
     )
   )
 
-  lazy val root = Project("debox", file("."))
-  lazy val ext = Project("ext", file("ext")).dependsOn(root)
-  lazy val benchmark:Project = Project("benchmark", file("benchmark")).settings(benchmarkSettings: _*).dependsOn(root, ext)
+  lazy val macros = Project("macros", file("macros"))
+  lazy val core = Project("core", file("core")).dependsOn(macros)
+
+  lazy val benchmark: Project =
+    Project("benchmark", file("benchmark")).settings(benchmarkSettings: _*).dependsOn(core)
 
   val key = AttributeKey[Boolean]("javaOptionsPatched")
 
