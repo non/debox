@@ -4,10 +4,11 @@ import sbt.Keys._
 object MyBuild extends Build {
   override lazy val settings = super.settings ++ Seq(
     name := "debox",
-    version := "0.1.1",
+    version := "0.3.0",
 
-    scalaVersion := "2.10.0",
-    scalaBinaryVersion := "2.10.0",
+    scalaVersion := "2.10.3",
+
+    conflictWarning in ThisBuild := ConflictWarning.disable,
 
     scalacOptions ++= Seq(
       "-Xlog-free-terms",
@@ -20,8 +21,10 @@ object MyBuild extends Build {
     ),
 
     libraryDependencies ++= Seq(
-      "org.scalatest" % "scalatest_2.10.0" % "1.8" % "test",
-      "org.scala-lang" % "scala-reflect" % "2.10.0"
+      "org.scala-lang" % "scala-reflect" % "2.10.3",
+      "org.spire-math" %% "spire" % "0.7.3",
+      "org.scalatest" %% "scalatest" % "2.0" % "test",
+      "org.scalacheck" %% "scalacheck" % "1.10.1" % "test"
     )
   )
 
@@ -38,7 +41,7 @@ object MyBuild extends Build {
     libraryDependencies ++= Seq(
       "com.google.guava" % "guava" % "r09",
       "com.google.code.java-allocation-instrumenter" % "java-allocation-instrumenter" % "2.0",
-      "com.google.code.caliper" % "caliper" % "1.0-SNAPSHOT" from "http://n0d.es/jars/caliper-1.0-SNAPSHOT.jar",
+      "com.google.code.caliper" % "caliper" % "1.0-SNAPSHOT" from "http://plastic-idolatry.com/jars/caliper-1.0-SNAPSHOT.jar",
       "com.google.code.gson" % "gson" % "1.7.1"
     ),
 

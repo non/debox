@@ -26,7 +26,8 @@ object Macros {
     val expr = reify {
       import scala.annotation.tailrec
 
-      val buckets = s.splice.getBuckets
+      //val buckets = s.splice.getBuckets
+      val buckets = s.splice.buckets
       val items = s.splice.items
 
       @inline @tailrec
@@ -34,7 +35,7 @@ object Macros {
         val c = if (buckets(i) == 3) { f.splice(items(i)); count + 1 } else count
         if (c < limit) loop(c, i + 1, limit)
       }
-      loop(0, 0, s.splice.length - 1)
+      loop(0, 0, s.splice.size - 1)
     }
 
     new debox.Inliner[c.type](c).inlineAndReset(expr)
