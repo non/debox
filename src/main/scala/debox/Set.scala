@@ -46,8 +46,8 @@ final class Set[@sp A] protected[debox](as: Array[A], bs: Array[Byte], n: Int, u
   var used: Int = u
 
   // hashing internals
-  var mask = items.length - 1 // size-1, used for hashing
-  var limit = (items.length * 0.65).toInt // point at which we should grow
+  var mask = buckets.length - 1 // size-1, used for hashing
+  var limit = (buckets.length * 0.65).toInt // point at which we should grow
 
   override def equals(that: Any): Boolean = that match {
     case that: Set[_] =>
@@ -89,6 +89,8 @@ final class Set[@sp A] protected[debox](as: Array[A], bs: Array[Byte], n: Int, u
   }
 
   final def copy: Set[A] = new Set(items.clone, buckets.clone, len, used)
+
+  final def clear: Unit = absorb(Set.empty[A])
 
   private[this] def absorb(that: Set[A]): Unit = {
     items = that.items
@@ -177,16 +179,16 @@ final class Set[@sp A] protected[debox](as: Array[A], bs: Array[Byte], n: Int, u
 
   def fold[@sp(Int, Long, Double, AnyRef) B](init: B)(f: (B, A) => B): B = {
     var result = init
-    cfor(0)(_ < items.length, _ + 1) { i =>
+    cfor(0)(_ < buckets.length, _ + 1) { i =>
       if (buckets(i) == 3) result = f(result, items(i))
     }
     result
   }
 
   final def grow(): Unit1[A] = {
-    val next = items.length * (if (items.length < 10000) 4 else 2)
+    val next = buckets.length * (if (buckets.length < 10000) 4 else 2)
     val set = Set.ofSize[A](next)
-    cfor(0)(_ < items.length, _ + 1) { i =>
+    cfor(0)(_ < buckets.length, _ + 1) { i =>
       if (buckets(i) == 3) set += items(i)
     }
     absorb(set)
@@ -195,7 +197,7 @@ final class Set[@sp A] protected[debox](as: Array[A], bs: Array[Byte], n: Int, u
 
   final def shrink(): Unit1[A] = {
     val set = Set.ofSize[A](len * 2)
-    cfor(0)(_ < items.length, _ + 1) { i =>
+    cfor(0)(_ < buckets.length, _ + 1) { i =>
       if (buckets(i) == 3) set += items(i)
     }
     absorb(set)
@@ -224,7 +226,7 @@ final class Set[@sp A] protected[debox](as: Array[A], bs: Array[Byte], n: Int, u
     if (this.size > that.size) {
       that.foreach(remove)
     } else {
-      cfor(0)(_ < items.length, _ + 1) { i =>
+      cfor(0)(_ < buckets.length, _ + 1) { i =>
         if (buckets(i) == 3 && !that(items(i))) {
           buckets(i) = 2
           len -= 1
@@ -277,7 +279,7 @@ final class Set[@sp A] protected[debox](as: Array[A], bs: Array[Byte], n: Int, u
       else if (i < limit) loop(i + 1, limit)
       else -1
     }
-    loop(0, items.length - 1)
+    loop(0, buckets.length - 1)
   }
 
   def loopUntil(p: A => Boolean): Int = {
@@ -286,6 +288,6 @@ final class Set[@sp A] protected[debox](as: Array[A], bs: Array[Byte], n: Int, u
       else if (i < limit) loop(i + 1, limit)
       else -1
     }
-    loop(0, items.length - 1)
+    loop(0, buckets.length - 1)
   }
 }

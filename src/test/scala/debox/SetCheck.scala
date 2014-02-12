@@ -11,7 +11,8 @@ import Arbitrary.arbitrary
 import scala.collection.mutable
 import scala.reflect._
 
-abstract class SetCheck[A: Arbitrary: ClassTag] extends PropSpec with Matchers with GeneratorDrivenPropertyChecks {
+abstract class SetCheck[A: Arbitrary: ClassTag]
+    extends PropSpec with Matchers with GeneratorDrivenPropertyChecks {
 
   import scala.collection.immutable.Set
   import debox.{Set => DSet}
@@ -55,7 +56,16 @@ abstract class SetCheck[A: Arbitrary: ClassTag] extends PropSpec with Matchers w
         a -= x
         a(x) shouldBe false
         b(x) shouldBe true
+        a should not be b
       }
+    }
+  }
+
+  property("clear") {
+    forAll { xs: List[A] =>
+      val a = DSet.fromIterable(xs)
+      a.clear
+      a shouldBe DSet.empty[A]
     }
   }
 
