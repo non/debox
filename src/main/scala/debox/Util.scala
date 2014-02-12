@@ -47,27 +47,15 @@ object Util {
   def arrayMacro[A: c.WeakTypeTag](c: Context)(as: c.Expr[A]*): c.Expr[Array[A]] = {
     import c.mirror._
     import c.universe._
-    def const(x: Int) = Literal(Constant(x))
   
     val n = as.length
-    val arr = newTermName("arr")
-  
-    val mod = Ident(staticModule("scala.reflect.ClassTag"))
-    val att = implicitly[c.WeakTypeTag[A]]
-    val ct = Apply(mod, List(c.reifyRuntimeClass(att.tpe)))
-  
-    val create = Apply(Select(ct, "newArray"), List(const(n)))
-    val arrtpe = TypeTree(implicitly[c.WeakTypeTag[Array[A]]].tpe)
-    val valdef = ValDef(Modifiers(), arr, arrtpe, create)
-  
-    val updates = (0 until n).map {
-      i => Apply(Select(Ident(arr), "update"), List(const(i), as(i).tree))
+    val tpe = implicitly[c.WeakTypeTag[A]].tpe
+    val valdef = q"val arr = new Array[$tpe]($n)"
+    val updates = as.toList.zipWithIndex.map { case (a, i) =>
+      q"arr($i) = ${a.tree}"
     }
-  
-    val exprs = Seq(valdef) ++ updates ++ Seq(Ident(arr))
-    val block = Block(exprs: _*)
-  
-    c.Expr[Array[A]](block)
+
+    c.Expr[Array[A]](Block(valdef :: updates, q"arr"))
   }
 
   /**

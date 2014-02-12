@@ -20,9 +20,13 @@ object MyBuild extends Build {
       "-unchecked"
     ),
 
+    resolvers += Resolver.sonatypeRepo("releases"),
+    addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.0-M3" cross CrossVersion.full),
+
     libraryDependencies ++= Seq(
-      "org.scala-lang" % "scala-reflect" % "2.10.3",
       "org.spire-math" %% "spire" % "0.7.3",
+      "org.scala-lang" % "scala-reflect" % "2.10.3" % "provided",
+      "org.scalamacros" % "quasiquotes_2.10.3" % "2.0.0-M3" % "provided",
       "org.scalatest" %% "scalatest" % "2.0" % "test",
       "org.scalacheck" %% "scalacheck" % "1.10.1" % "test"
     )
