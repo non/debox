@@ -9,9 +9,6 @@ import scala.util.Random._
 
 import com.google.caliper.Param
 
-import debox._
-import debox.set
-
 object MapBenchmarks extends MyRunner(classOf[MapBenchmarks])
 
 class MapBenchmarks extends MyBenchmark {
@@ -24,7 +21,7 @@ class MapBenchmarks extends MyBenchmark {
 
   var scalaMap:mutable.Map[Int, Double] = null
   var javaMap:java.util.HashMap[Int, Double] = null
-  var deboxMap:map.Map[Int, Double] = null
+  var deboxMap:debox.Map[Int, Double] = null
 
   override protected def setUp() {
     val n = scala.math.pow(2, pow).toInt
@@ -35,7 +32,7 @@ class MapBenchmarks extends MyBenchmark {
 
     scalaMap = mutable.Map.empty[Int, Double]
     javaMap = new java.util.HashMap[Int, Double]()
-    deboxMap = map.Map.empty[Int, Double]
+    deboxMap = debox.Map.empty[Int, Double]
 
     var i = 0
     while (i < n) {
@@ -79,11 +76,11 @@ class MapBenchmarks extends MyBenchmark {
   }
 
   def buildDeboxMap:Int = {
-    val m = map.Map.empty[Int, Double]
+    val m = debox.Map.empty[Int, Double]
     var i = 0
     val len = keys.length
     while (i < len) { m(keys(i)) = vals(i); i += 1 }
-    m.length
+    m.size
   }
 
   // foreach benchmark

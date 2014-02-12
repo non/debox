@@ -37,7 +37,7 @@ object Set {
   }
 }
 
-final class Set[@sp A] protected[debox](as: Array[A], bs: Array[Byte], n: Int, u: Int)(implicit val ct: ClassTag[A]) extends Function1[A, Boolean] {
+final class Set[@sp A] protected[debox](as: Array[A], bs: Array[Byte], n: Int, u: Int)(implicit val ct: ClassTag[A]) {
 
   // set machinery
   var items: Array[A] = as
