@@ -1,6 +1,4 @@
-package debox.set
-
-import debox._
+package debox
 
 import scala.annotation.{switch, tailrec}
 import scala.reflect.ClassTag

@@ -5,7 +5,7 @@ import scala.{specialized => spec}
 import scala.collection.mutable
 import scala.util.Random._
 
-import debox.Ext._
+//import debox.Ext._
 
 import com.google.caliper.Param
 
@@ -55,7 +55,7 @@ class MapBenchmarks extends MyBenchmark {
   def timeForeachScalaMap(reps:Int) = run(reps)(foreachScalaMap)
   def timeForeachJavaMap(reps:Int) = run(reps)(foreachJavaMap)
   def timeForeachDeboxMap(reps:Int) = run(reps)(foreachDeboxMap)
-  def timeForeachMacroDeboxMap(reps:Int) = run(reps)(foreachMacroDeboxMap)
+  //def timeForeachMacroDeboxMap(reps:Int) = run(reps)(foreachMacroDeboxMap)
   
   // contains benchmark
   def timeContainsScalaMap(reps:Int) = run(reps)(containsScalaMap)
@@ -125,16 +125,16 @@ class MapBenchmarks extends MyBenchmark {
     (ks, vs)
   }
 
-  def foreachMacroDeboxMap = {
-    import debox.Ext._
-    var ks = 0
-    var vs = 0.0
-    deboxMap.foreach_((k, v) => ks += k * 3)
-    deboxMap.foreach_((k, v) => vs += v * 3)
-    deboxMap.foreach_((k, v) => { ks -= k; vs -= 2 * v })
-    deboxMap.foreach_((k, v) => { ks -= 2 * k; vs -= v })
-    (ks, vs)
-  }
+  // def foreachMacroDeboxMap = {
+  //   import debox.Ext._
+  //   var ks = 0
+  //   var vs = 0.0
+  //   deboxMap.foreach_((k, v) => ks += k * 3)
+  //   deboxMap.foreach_((k, v) => vs += v * 3)
+  //   deboxMap.foreach_((k, v) => { ks -= k; vs -= 2 * v })
+  //   deboxMap.foreach_((k, v) => { ks -= 2 * k; vs -= v })
+  //   (ks, vs)
+  // }
 
   // contains benchmark
   def containsScalaMap:Long = {

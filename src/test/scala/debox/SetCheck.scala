@@ -10,9 +10,11 @@ import Arbitrary.arbitrary
 
 import scala.collection.mutable
 import scala.reflect._
-import debox.set.{Set => DSet}
 
 abstract class SetCheck[A: Arbitrary: ClassTag] extends PropSpec with Matchers with GeneratorDrivenPropertyChecks {
+
+  import scala.collection.immutable.Set
+  import debox.{Set => DSet}
 
   def hybridEq[A](d: DSet[A], s: mutable.Set[A]): Boolean =
     d.size == s.size && d.forall(s.contains)
