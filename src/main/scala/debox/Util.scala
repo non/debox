@@ -2,12 +2,16 @@ package debox
 
 import annotation.tailrec
 import scala.math.{min, max}
-import scala.{specialized => spec}
+import scala.{specialized => sp}
 
 import language.experimental.macros
 
 import scala.reflect.ClassTag
 import scala.reflect.macros.Context
+
+class Unit1[@sp A]
+
+class Unit2[@sp A, @sp B]
 
 object Util {
 
@@ -17,7 +21,7 @@ object Util {
    * 
    * This method does not do any size or bounds checking.
    */
-  def alloc[@spec A: ClassTag](src: Array[A], offset: Int, len: Int) = {
+  def alloc[@sp A: ClassTag](src: Array[A], offset: Int, len: Int) = {
     val as = new Array[A](len)
     System.arraycopy(src, offset, as, 0, len)
     as
