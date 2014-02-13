@@ -8,76 +8,6 @@ import spire.math.QuickSort
 import spire.syntax.cfor._
 import spire.syntax.order._
 
-object Buffer {
-
-  /**
-   * Allocate an empty Buffer.
-   */
-  def empty[@sp A: ClassTag]: Buffer[A] =
-    ofSize[A](8)
-
-  /**
-   * Allocate an empty Buffer, capable of holding n items without
-   * resizing itself.
-   */
-  def ofSize[@sp A: ClassTag](n: Int): Buffer[A] =
-    new Buffer(new Array[A](Util.nextPowerOfTwo(n)), 0)
-
-  /**
-   * Fill a length-n Buffer with a constant value.
-   * 
-   * If A is a reference type, all the elements in the Buffer will
-   * point to the same 'a' instance. If it is known to be a value type
-   * (e.g. Int) then all the values will be primitives.
-   */
-  def fill[@sp A: ClassTag](n: Int)(a: A): Buffer[A] =
-    unsafe(Array.fill(n)(a))
-
-  /**
-   * Wrap an array instance directly in a Buffer.
-   * 
-   * This method is named 'unsafe' because the underlying array could
-   * potentially be modified somewhere else, changing or corrupting
-   * the Buffer. You should only use this method when you know that
-   * the array will not be stored or modified externally.
-   */
-  def unsafe[@sp A: ClassTag](arr: Array[A]): Buffer[A] =
-    new Buffer(arr, arr.length)
-
-  /**
-   * Build a Buffer instance from the provided values.
-   */
-  def apply[A: ClassTag](args: A*): Buffer[A] =
-    unsafe(args.toArray)
-    
-  /**
-   * Build a Buffer from the provided array.
-   * 
-   * Unlike 'unsafe' this method clones the given array, to prevent
-   * possible corruption later.
-   */
-  def fromArray[@sp A: ClassTag](arr: Array[A]): Buffer[A] =
-    new Buffer(arr.clone, arr.length)
-
-  /**
-   * Build a Buffer from the provided iterable object.
-   */
-  def fromIterable[@sp A: ClassTag](items: Iterable[A]): Buffer[A] =
-    unsafe(items.toArray)
-
-  /**
-   * Provide a monoid for concatenating buffers.
-   * 
-   * The identity value is an empty buffer, and the ++ operator is
-   * used to concatenate two buffers without modifying their contents.
-   */
-  implicit def monoid[@sp A: ClassTag]: Monoid[Buffer[A]] =
-    new Monoid[Buffer[A]] {
-      def id: Buffer[A] = Buffer.empty[A]
-      def op(lhs: Buffer[A], rhs: Buffer[A]): Buffer[A] = lhs ++ rhs
-    }
-}
-
 /**
  * Buffer is a mutable, indexed sequence of values.
  * 
@@ -680,4 +610,74 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
     cfor(0)(_ < len, _ + 1) { i => b += elems(i) }
     b.toList
   }
+}
+
+object Buffer {
+
+  /**
+   * Allocate an empty Buffer.
+   */
+  def empty[@sp A: ClassTag]: Buffer[A] =
+    ofSize[A](8)
+
+  /**
+   * Allocate an empty Buffer, capable of holding n items without
+   * resizing itself.
+   */
+  def ofSize[@sp A: ClassTag](n: Int): Buffer[A] =
+    new Buffer(new Array[A](Util.nextPowerOfTwo(n)), 0)
+
+  /**
+   * Fill a length-n Buffer with a constant value.
+   * 
+   * If A is a reference type, all the elements in the Buffer will
+   * point to the same 'a' instance. If it is known to be a value type
+   * (e.g. Int) then all the values will be primitives.
+   */
+  def fill[@sp A: ClassTag](n: Int)(a: A): Buffer[A] =
+    unsafe(Array.fill(n)(a))
+
+  /**
+   * Wrap an array instance directly in a Buffer.
+   * 
+   * This method is named 'unsafe' because the underlying array could
+   * potentially be modified somewhere else, changing or corrupting
+   * the Buffer. You should only use this method when you know that
+   * the array will not be stored or modified externally.
+   */
+  def unsafe[@sp A: ClassTag](arr: Array[A]): Buffer[A] =
+    new Buffer(arr, arr.length)
+
+  /**
+   * Build a Buffer instance from the provided values.
+   */
+  def apply[A: ClassTag](args: A*): Buffer[A] =
+    unsafe(args.toArray)
+    
+  /**
+   * Build a Buffer from the provided array.
+   * 
+   * Unlike 'unsafe' this method clones the given array, to prevent
+   * possible corruption later.
+   */
+  def fromArray[@sp A: ClassTag](arr: Array[A]): Buffer[A] =
+    new Buffer(arr.clone, arr.length)
+
+  /**
+   * Build a Buffer from the provided iterable object.
+   */
+  def fromIterable[@sp A: ClassTag](items: Iterable[A]): Buffer[A] =
+    unsafe(items.toArray)
+
+  /**
+   * Provide a monoid for concatenating buffers.
+   * 
+   * The identity value is an empty buffer, and the ++ operator is
+   * used to concatenate two buffers without modifying their contents.
+   */
+  implicit def monoid[@sp A: ClassTag]: Monoid[Buffer[A]] =
+    new Monoid[Buffer[A]] {
+      def id: Buffer[A] = Buffer.empty[A]
+      def op(lhs: Buffer[A], rhs: Buffer[A]): Buffer[A] = lhs ++ rhs
+    }
 }
