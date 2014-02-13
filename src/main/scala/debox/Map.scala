@@ -95,7 +95,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp(Boolean, Int, Long, Double, AnyRef
       false
   }
 
-  override def hashCode: Int = fold(0)(_ ^ _.## ^ _.##)
+  override def hashCode: Int = fold(0xb0bd0bb5)(_ ^ _.## ^ _.##)
 
   override def toString: String = {
     val sb = new StringBuilder
@@ -112,6 +112,8 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp(Boolean, Int, Long, Double, AnyRef
   }
 
   final def size: Int = len
+  final def isEmpty: Boolean = len == 0
+  final def nonEmpty: Boolean = len > 0
 
   final def +=(kv: (A, B)): Unit = update(kv._1, kv._2)
 
@@ -297,8 +299,13 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp(Boolean, Int, Long, Double, AnyRef
     result
   }
 
-  final def mapValues[@sp (Boolean, Int, Long, Double, AnyRef) C: ClassTag](f: B => C): Map[A, C] =
-    new Map[A, C](keys.clone, vals.map(f), buckets.clone, len, used)
+  final def mapValues[@sp (Boolean, Int, Long, Double, AnyRef) C: ClassTag](f: B => C): Map[A, C] = {
+    val arr = new Array[C](buckets.length)
+    cfor(0)(_ < buckets.length, _ + 1) { i =>
+      if (buckets(i) == 3) arr(i) = f(vals(i))
+    }
+    new Map[A, C](keys.clone, arr, buckets.clone, len, used)
+  }
 
   final def mapToArray[@sp (Int, Long, Double) C: ClassTag](f: (A, B) => C): Array[C] = {
     val result = new Array[C](len)

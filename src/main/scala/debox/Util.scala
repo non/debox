@@ -23,6 +23,13 @@ object Util {
     as
   }
 
+  def bufferMacro[A: c.WeakTypeTag](c: Context)(as: c.Expr[A]*): c.Expr[debox.Buffer[A]] = {
+    import c.mirror._
+    import c.universe._
+    val arr = arrayMacro(c)(as: _*)
+    c.Expr[debox.Buffer[A]](q"debox.unsafe($arr)")
+  }
+
   /**
    * Efficient alternative to Array.apply.
    *

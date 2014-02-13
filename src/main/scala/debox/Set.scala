@@ -56,7 +56,7 @@ final class Set[@sp A] protected[debox](as: Array[A], bs: Array[Byte], n: Int, u
       false
   }
 
-  override def hashCode: Int = fold(0)(_ ^ _.##)
+  override def hashCode: Int = fold(0xdeadd065)(_ ^ _.##)
 
   override def toString: String = {
     val sb = new StringBuilder
@@ -71,6 +71,8 @@ final class Set[@sp A] protected[debox](as: Array[A], bs: Array[Byte], n: Int, u
   }
 
   final def size: Int = len
+  final def isEmpty: Boolean = len == 0
+  final def nonEmpty: Boolean = len > 0
 
   final def apply(item: A): Boolean = {
     @inline @tailrec def loop(i: Int, perturbation: Int): Boolean = {
