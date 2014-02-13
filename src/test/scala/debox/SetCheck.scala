@@ -148,6 +148,33 @@ abstract class SetCheck[A: Arbitrary: ClassTag]
       (as -- bs) shouldBe cs
     }
   }
+
+  property("foreach") {
+    forAll { (xs: Set[A]) =>
+      val a = DSet.fromIterable(xs)
+      val b = DSet.empty[A]
+      a.foreach(b += _)
+      a shouldBe b
+    }
+  }
+
+  property("map") {
+    forAll { (xs: Set[A], f: A => A) =>
+      val a = DSet.fromIterable(xs)
+      a.map(x => x) shouldBe a
+      a.map(f) shouldBe DSet.fromIterable(xs.map(f))
+    }
+  }
+
+  property("partition") {
+    forAll { (xs: Set[A], f: A => Boolean) =>
+      val a = DSet.fromIterable(xs)
+      val (b, c) = a.partition(f)
+      b.foreach { x => a(x) shouldBe true }
+      c.foreach { x => a(x) shouldBe true }
+      a.size shouldBe (b.size + c.size)
+    }
+  }
 }
 
 class BooleanSetCheck extends SetCheck[Boolean]
