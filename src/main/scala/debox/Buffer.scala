@@ -33,10 +33,12 @@ import spire.syntax.order._
  * 
  * Furthermore, since Buffer is really only useful in cases where you
  * care about space efficiency and performance, Buffer declines to do
- * error-checking above what is provided by the underlying array. This
- * means that if you try to access an element beyond the Buffer's
- * length, you are not guaranteed to get an exception (although you
- * will in many cases). This is by design.
+ * error-checking above what is provided by the underlying array, or
+ * which is necessary to avoid corruption. This means that if you try
+ * to access an element beyond the Buffer's length, you are not
+ * guaranteed to get an exception (although you will in many
+ * cases). This is by design. However, calls which modify the buffer
+ * using an invalid index are guaranteed not to corrupt the buffer.
  * 
  * Finally, there is no attempt made to provide any kind of thread
  * safety or protection against concurrent updates. Modify a Buffer
