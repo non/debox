@@ -15,7 +15,7 @@ abstract class BufferCheck[A: Arbitrary: ClassTag]
     extends PropSpec with Matchers with GeneratorDrivenPropertyChecks {
 
   import scala.collection.immutable.Set
-  import scala.collection.immutable.Vector
+  //import scala.collection.immutable.Vector
 
   def hybridEq[A](d: Buffer[A], s: IndexedSeq[A]): Boolean =
     d.length == s.length && (0 until d.length).forall(i => d(i) == s(i))
@@ -140,7 +140,7 @@ abstract class BufferCheck[A: Arbitrary: ClassTag]
     }
   }
 
-  property("bulk add (++=)") {
+  property("extend (++=)") {
     forAll { (xs: List[A], ys: List[A]) =>
       val buf = Buffer.empty[A]
       val control = mutable.ArrayBuffer.empty[A]
@@ -152,6 +152,48 @@ abstract class BufferCheck[A: Arbitrary: ClassTag]
       buf ++= ys
       control ++= ys
       hybridEq(buf, control) shouldBe true
+    }
+  }
+
+  property("splice") {
+    forAll { (xs: List[A], ys: List[A], i0: Byte) =>
+      val i = if (xs.isEmpty) 0 else (i0 & 0xff) % xs.length
+
+      val buf1 = Buffer.fromIterable(xs)
+      val buf2 = Buffer.fromIterable(xs)
+      val control = mutable.ArrayBuffer(xs: _*)
+      hybridEq(buf1, control) shouldBe true
+      hybridEq(buf2, control) shouldBe true
+  
+      buf1.splice(i, ys.toArray)
+      buf2.splice(i, Buffer.fromIterable(ys))
+      control.insertAll(i, ys)
+      hybridEq(buf1, control) shouldBe true
+      hybridEq(buf2, control) shouldBe true
+    }
+  }
+
+  property("iterator") {
+    forAll { xs: List[A] =>
+      Buffer.fromIterable(xs).iterator.toList shouldBe xs
+    }
+  }
+
+  property("toIterable") {
+    forAll { xs: List[A] =>
+      Buffer.fromIterable(xs).toIterable.toList shouldBe xs
+    }
+  }
+
+  property("toList") {
+    forAll { xs: List[A] =>
+      Buffer.fromIterable(xs).toList shouldBe xs
+    }
+  }
+
+  property("toVector") {
+    forAll { xs: List[A] =>
+      Buffer.fromIterable(xs).toVector shouldBe xs.toVector
     }
   }
 }
