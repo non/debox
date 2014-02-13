@@ -119,47 +119,23 @@ abstract class MapCheck[A: Arbitrary: ClassTag, B: Arbitrary: ClassTag]
     }
   }
 
-  // property("bulk add (++=)") {
-  //   forAll { (xs: List[A], ys: List[A]) =>
-  //     val map = DMap.empty[A]
-  //     val control = mutable.Map.empty[A]
-  // 
-  //     map ++= xs
-  //     control ++= xs
-  //     hybridEq(map, control) shouldBe true
-  // 
-  //     map ++= ys
-  //     control ++= ys
-  //     hybridEq(map, control) shouldBe true
-  //   }
-  // }
+  property("foreach") {
+    forAll { (kvs: Map[A, B]) =>
+      val map1 = DMap.fromIterable(kvs)
+      val map2 = DMap.empty[A, B]
+      map1.foreach { (k, v) =>
+        map2(k) = v
+      }
+      map1 shouldBe map2
+    }
+  }
 
-  // property("union (|)") {
-  //   forAll { (xs: Map[A], ys: Map[A]) =>
-  //     val as = DMap.fromIterable(xs)
-  //     val bs = DMap.fromIterable(ys)
-  //     val cs = DMap.fromIterable(xs | ys)
-  //     (as | bs) shouldBe cs
-  //   }
-  // }
-  // 
-  // property("intersection (&)") {
-  //   forAll { (xs: Map[A], ys: Map[A]) =>
-  //     val as = DMap.fromIterable(xs)
-  //     val bs = DMap.fromIterable(ys)
-  //     val cs = DMap.fromIterable(xs & ys)
-  //     (as & bs) shouldBe cs
-  //   }
-  // }
-  // 
-  // property("difference (--)") {
-  //   forAll { (xs: Map[A], ys: Map[A]) =>
-  //     val as = DMap.fromIterable(xs)
-  //     val bs = DMap.fromIterable(ys)
-  //     val cs = DMap.fromIterable(xs -- ys)
-  //     (as -- bs) shouldBe cs
-  //   }
-  // }
+  property("map") {
+    forAll { kvs: Map[A, B] =>
+      val m = DMap.fromIterable(kvs)
+      m.mapValues(b => b) shouldBe m
+    }
+  }
 }
 
 class IntIntMapCheck extends MapCheck[Int, Int]
