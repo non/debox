@@ -33,8 +33,7 @@ object MyBuild extends Build {
   )
 
   lazy val root = Project("debox", file("."))
-  lazy val ext = Project("ext", file("ext")).dependsOn(root)
-  lazy val benchmark:Project = Project("benchmark", file("benchmark")).settings(benchmarkSettings: _*).dependsOn(root, ext)
+  lazy val benchmark: Project = Project("benchmark", file("benchmark")).settings(benchmarkSettings: _*).dependsOn(root)
 
   val key = AttributeKey[Boolean]("javaOptionsPatched")
 

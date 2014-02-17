@@ -3,10 +3,9 @@ package debox
 import scala.reflect.ClassTag
 import scala.{specialized => sp}
 
-import spire.algebra.{Monoid, Order}
+import spire.algebra._
 import spire.math.QuickSort
-import spire.syntax.cfor._
-import spire.syntax.order._
+import spire.syntax.all._
 
 /**
  * Buffer is a mutable, indexed sequence of values.
@@ -120,13 +119,13 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
 
   /**
    * Given delta, a change in the buffer's length, determine if the
-   * underlying array needs to be resized. If a resize is necessary,
-   * do it. Otherwise, return.
+   * underlying array needs to be grown. If this is necessary, do
+   * it. Otherwise, return.
    * 
    * This is an amortized O(1) operation; most calls will simply
-   * return without resizing.
+   * return without growing.
    */
-  private[this] def resizeIfNecessary(delta: Int): Unit = {
+  private[this] def growIfNecessary(delta: Int): Unit = {
     val goal = len + delta
     val n = elems.length
     if (n >= goal) return ()
@@ -134,19 +133,19 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
     var x = if (n == 0) 8 else Util.nextPowerOfTwo(n + 1)
     while (x >= 0 && x < goal) x = Util.nextPowerOfTwo(x + 1)
     if (x < 0) sys.error("overflow")
-    resize(x)
+    grow(x)
   }
 
   /**
-   * Resize the underlying array to accomodate n elements.
+   * Grow the underlying array to accomodate n elements.
    * 
-   * In order to amortize the cost of resizing, we need to double the
-   * size of the underlying array on each resize, so that additional
+   * In order to amortize the cost of growth, we need to double the
+   * size of the underlying array each time, so that additional
    * resizes become less and less frequent as the buffer is added to.
    * 
-   * Resizing is an O(n) operation, where n is buffer.length.
+   * Growing is an O(n) operation, where n is buffer.length.
    */
-  private[this] def resize(n: Int): Unit = {
+  private[this] def grow(n: Int): Unit = {
     val arr = new Array[A](n)
     System.arraycopy(elems, 0, arr, 0, len)
     elems = arr
@@ -213,14 +212,14 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
    * Append a new value to the end of the buffer.
    * 
    * If there is no space left in the underlying array this method
-   * will trigger a resize, increasing the underlying storage
+   * will trigger a grow, increasing the underlying storage
    * capacity.
    * 
    * This is an amortized O(1) operation.
    */
   def append(a: A): Unit = {
     val n = len
-    if (n >= elems.length) resize(Util.nextPowerOfTwo(n + 1))
+    if (n >= elems.length) grow(Util.nextPowerOfTwo(n + 1))
     elems(n) = a
     len = n + 1
   }
@@ -241,7 +240,7 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
     } else if (i == len) {
       append(a)
     } else {
-      resizeIfNecessary(1)
+      growIfNecessary(1)
       System.arraycopy(elems, i, elems, i + 1, len - i)
       elems(i) = a
       len += 1
@@ -325,7 +324,7 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
       throw new IllegalArgumentException(i.toString)
     } else {
       val n = arr.length
-      resizeIfNecessary(n)
+      growIfNecessary(n)
       if (i < len) System.arraycopy(elems, i, elems, i + n, len - i)
       System.arraycopy(arr, 0, elems, i, n)
       len += n
@@ -348,7 +347,7 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
       throw new IllegalArgumentException(i.toString)
     } else {
       val n = buf.length
-      resizeIfNecessary(n)
+      growIfNecessary(n)
       if (i < len) System.arraycopy(elems, i, elems, i + n, len - i)
       System.arraycopy(buf.elems, 0, elems, i, n)
       len += n
@@ -506,6 +505,29 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
     val limit = len
     cfor(0)(_ < limit, _ + 1) { i => arr(i) = f(elems(i)) }
     new Buffer(arr, len)
+  }
+
+  def sum(implicit ev: AdditiveMonoid[A]): A = {
+    val limit = len
+    var result: A = ev.zero
+    cfor(0)(_ < limit, _ + 1) { i => result += elems(i) }
+    result
+  }
+
+  def product(implicit ev: MultiplicativeMonoid[A]): A = {
+    val limit = len
+    var result: A = ev.one
+    cfor(0)(_ < limit, _ + 1) { i => result *= elems(i) }
+    result
+  }
+
+  def norm(k: Int)(implicit ev: Field[A], s: Signed[A], nr: NRoot[A]): A = {
+    val limit = len
+    var result: A = ev.one
+    cfor(0)(_ < limit, _ + 1) { i =>
+      result += elems(i).abs ** k
+    }
+    result nroot k
   }
 
   /**
