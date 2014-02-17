@@ -8,71 +8,9 @@ import spire.algebra.Monoid
 import spire.syntax.cfor._
 import spire.syntax.monoid._
 
-class MapOverflow(n: Int) extends Exception("size %s exceeds max" format n)
-class NotFound(k: String) extends Exception("key %s was not found" format k)
-
-object Map {
-
-  /**
-   * Create an empty Map.
-   * 
-   * Map.empty[Int, String]
-   */
-  def empty[@sp(Int, Long, AnyRef) A: ClassTag, @sp(Boolean, Int, Long, Double, AnyRef) B: ClassTag]: Map[A, B] =
-    new Map(new Array[A](8), new Array[B](8), new Array[Byte](8), 0, 0)
-
-  /**
-   * Create a Map preallocated to a particular size.
-   *
-   * Note that the internal representation may allocate more space than
-   * requested to satisfy the requirements of internal alignment. Map uses
-   * arrays whose lengths are powers of two.
-   * 
-   * Map.ofSize[Int, String](100)
-   */
-  def ofSize[@sp(Int, Long, AnyRef) A: ClassTag, @sp(Boolean, Int, Long, Double, AnyRef) B: ClassTag](n: Int): Map[A, B] = {
-    val sz = Util.nextPowerOfTwo(n) match {
-      case n if n < 0 => throw new MapOverflow(n)
-      case 0 => 8
-      case n => n
-    }
-    new Map(new Array[A](sz), new Array[B](sz), new Array[Byte](sz), 0, 0)
-  }
-
-  /**
-   * Create a new literal map.
-   * 
-   * Map(1 -> "cat", 2 -> "dog", 3 -> "fish")
-   */
-  def apply[@sp(Int, Long, AnyRef) A: ClassTag, @sp(Boolean, Int, Long, Double, AnyRef) B: ClassTag](pairs: (A, B)*): Map[A, B] =
-    fromIterable(pairs)
-
-  /**
-   * Create a map from an array of keys and another array of values.
-   * 
-   * Map(Array(1,2,3), Array("cat", "dog", "fish"))
-   */
-  def fromArrays[@sp(Int, Long, AnyRef) A: ClassTag, @sp(Boolean, Int, Long, Double, AnyRef) B: ClassTag](ks: Array[A], vs: Array[B]): Map[A, B] = {
-    if (ks.length != vs.length) throw new InvalidSizes(ks.length, vs.length)
-    val map = ofSize[A, B](ks.length)
-    cfor(0)(_ < ks.length, _ + 1) { i => map(ks(i)) = vs(i) }
-    map
-  }
-
-  /**
-   * Create a map from an iterable of tuples.
-   * 
-   * Map(List((1, "cat"), (2, "dog"), (3, "fish")))
-   */
-  def fromIterable[@sp(Int, Long, AnyRef) A: ClassTag, @sp(Boolean, Int, Long, Double, AnyRef) B: ClassTag](pairs: Iterable[(A, B)]): Map[A, B] = {
-    val result = empty[A, B]
-    // work around compiler bug with foreach here
-    val it = pairs.iterator
-    while (it.hasNext) { result += it.next }
-    result
-  }
-}
-
+/**
+ * 
+ */
 final class Map[@sp(Int, Long, AnyRef) A, @sp(Boolean, Int, Long, Double, AnyRef) B] protected[debox] (ks: Array[A], vs: Array[B], bs: Array[Byte], n: Int, u: Int)(implicit val cta: ClassTag[A], val ctb: ClassTag[B]) {
 
   // set internals
@@ -88,9 +26,9 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp(Boolean, Int, Long, Double, AnyRef
 
   override def equals(that: Any): Boolean = that match {
     case that: Map[_, _] =>
-      size == that.size &&
-      cta == that.cta && ctb == that.ctb &&
-      forall(that.asInstanceOf[Map[A, B]].containsItem)
+      if (size != that.size || cta != that.cta || ctb != that.ctb) return false
+      val m = that.asInstanceOf[Map[A, B]]
+      forall(m.containsItem)
     case _ =>
       false
   }
@@ -100,12 +38,22 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp(Boolean, Int, Long, Double, AnyRef
   override def toString: String = {
     val sb = new StringBuilder
     sb.append("Map(")
-    var first = true
-    foreach { (k, v) =>
-      if (first) first = false else sb.append(", ")
-      sb.append(k.toString)
+    var i = 0
+    while (i < buckets.length && buckets(i) != 3) i += 1
+    if (i < buckets.length) {
+      sb.append(keys(i).toString)
       sb.append(" -> ")
-      sb.append(v.toString)
+      sb.append(vals(i).toString)
+      i += 1
+    }
+    while (i < buckets.length) {
+      if (buckets(i) == 3) {
+        sb.append(", ")
+        sb.append(keys(i).toString)
+        sb.append(" -> ")
+        sb.append(vals(i).toString)
+      }
+      i += 1
     }
     sb.append(")")
     sb.toString
@@ -393,5 +341,66 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp(Boolean, Int, Long, Double, AnyRef
     }
     loop(0, buckets.length - 1)
   }
+}
 
+object Map {
+
+  /**
+   * Create an empty Map.
+   * 
+   * Map.empty[Int, String]
+   */
+  def empty[@sp(Int, Long, AnyRef) A: ClassTag, @sp(Boolean, Int, Long, Double, AnyRef) B: ClassTag]: Map[A, B] =
+    new Map(new Array[A](8), new Array[B](8), new Array[Byte](8), 0, 0)
+
+  /**
+   * Create a Map preallocated to a particular size.
+   *
+   * Note that the internal representation may allocate more space than
+   * requested to satisfy the requirements of internal alignment. Map uses
+   * arrays whose lengths are powers of two.
+   * 
+   * Map.ofSize[Int, String](100)
+   */
+  def ofSize[@sp(Int, Long, AnyRef) A: ClassTag, @sp(Boolean, Int, Long, Double, AnyRef) B: ClassTag](n: Int): Map[A, B] = {
+    val sz = Util.nextPowerOfTwo(n) match {
+      case n if n < 0 => throw DeboxOverflowError(n)
+      case 0 => 8
+      case n => n
+    }
+    new Map(new Array[A](sz), new Array[B](sz), new Array[Byte](sz), 0, 0)
+  }
+
+  /**
+   * Create a new literal map.
+   * 
+   * Map(1 -> "cat", 2 -> "dog", 3 -> "fish")
+   */
+  def apply[@sp(Int, Long, AnyRef) A: ClassTag, @sp(Boolean, Int, Long, Double, AnyRef) B: ClassTag](pairs: (A, B)*): Map[A, B] =
+    fromIterable(pairs)
+
+  /**
+   * Create a map from an array of keys and another array of values.
+   * 
+   * Map(Array(1,2,3), Array("cat", "dog", "fish"))
+   */
+  def fromArrays[@sp(Int, Long, AnyRef) A: ClassTag, @sp(Boolean, Int, Long, Double, AnyRef) B: ClassTag](ks: Array[A], vs: Array[B]): Map[A, B] = {
+    if (ks.length != vs.length) throw new InvalidSizes(ks.length, vs.length)
+    val map = ofSize[A, B](ks.length)
+    cfor(0)(_ < ks.length, _ + 1) { i => map(ks(i)) = vs(i) }
+    map
+  }
+
+  /**
+   * Create a map from an iterable of tuples.
+   * 
+   * Map(List((1, "cat"), (2, "dog"), (3, "fish")))
+   */
+  def fromIterable[@sp(Int, Long, AnyRef) A: ClassTag, @sp(Boolean, Int, Long, Double, AnyRef) B: ClassTag](pairs: Iterable[(A, B)]): Map[A, B] = {
+    val result = empty[A, B]
+    // work around compiler bug with foreach here
+    val it = pairs.iterator
+    while (it.hasNext) { result += it.next }
+    result
+  }
 }

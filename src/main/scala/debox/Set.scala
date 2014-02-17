@@ -6,52 +6,33 @@ import scala.{specialized => sp}
 
 import spire.syntax.cfor._
 
-class InvalidSizes(k: Int, v: Int) extends Exception("%s, %s" format (k, v))
-class SetOverflow(n: Int) extends Exception("size %s exceeds max" format n)
-
-object Set {
-  def empty[@sp A: ClassTag] = new Set(new Array[A](8), new Array[Byte](8), 0, 0)
-
-  def ofSize[@sp A: ClassTag](n: Int) = {
-    val sz = Util.nextPowerOfTwo(n) match {
-      case n if n < 0 => throw new SetOverflow(n)
-      case 0 => 8
-      case n => n
-    }
-    new Set(new Array[A](sz), new Array[Byte](sz), 0, 0)
-  }
-
-  def apply[@sp A: ClassTag](as: A*): Set[A] = fromIterable(as)
-
-  def fromArray[@sp A: ClassTag](as: Array[A]): Set[A] = {
-    val n = spire.math.max(8, as.length + as.length / 2)
-    val set = ofSize[A](n)
-    cfor(0)(_ < as.length, _ + 1)(i => set.add(as(i)))
-    set
-  }
-
-  def fromIterable[@sp A: ClassTag](as: Iterable[A]): Set[A] = {
-    val set = empty[A]
-    set ++= as
-    set
-  }
-}
-
-final class Set[@sp A] protected[debox](as: Array[A], bs: Array[Byte], n: Int, u: Int)(implicit val ct: ClassTag[A]) {
+/**
+ * Set is a mutable hash set, with open addressing and double hashing.
+ * 
+ * Set provides constant-time membership tests, and amortized
+ * constant-time addition and removal. One underlying array stores
+ * items, and another tracks which buckets are used and defined.
+ *
+ * When the type A is known (or the caller is specialized on A),
+ * Set[A] will store the values in an unboxed array.
+ */
+final class Set[@sp A] protected[debox](as: Array[A], bs: Array[Byte], n: Int, u: Int)(implicit val ct: ClassTag[A]) { lhs =>
 
   // set machinery
-  var items: Array[A] = as
-  var buckets: Array[Byte] = bs
-  var len: Int = n
-  var used: Int = u
+  var items: Array[A] = as      // slots for items
+  var buckets: Array[Byte] = bs // buckets track defined/used slots
+  var len: Int = n              // number of defined slots
+  var used: Int = u             // number of used slots (used >= len)
 
   // hashing internals
-  var mask = buckets.length - 1 // size-1, used for hashing
+  var mask = buckets.length - 1             // size-1, used for hashing
   var limit = (buckets.length * 0.65).toInt // point at which we should grow
 
   override def equals(that: Any): Boolean = that match {
     case that: Set[_] =>
-      size == that.size && ct == that.ct && forall(that.asInstanceOf[Set[A]].apply)
+      if (size != that.size || ct != that.ct) return false
+      val s = that.asInstanceOf[Set[A]]
+      forall(s.apply)
     case _ =>
       false
   }
@@ -61,10 +42,18 @@ final class Set[@sp A] protected[debox](as: Array[A], bs: Array[Byte], n: Int, u
   override def toString: String = {
     val sb = new StringBuilder
     sb.append("Set(")
-    var first = true
-    foreach { a =>
-      if (first) first = false else sb.append(", ")
-      sb.append(a.toString)
+    var i = 0
+    while (i < buckets.length && buckets(i) != 3) i += 1
+    if (i < buckets.length) {
+      sb.append(items(i).toString)
+      i += 1
+    }
+    while (i < buckets.length) {
+      if (buckets(i) == 3) {
+        sb.append(", ")
+        sb.append(items(i).toString)
+      }
+      i += 1
     }
     sb.append(")")
     sb.toString
@@ -141,9 +130,9 @@ final class Set[@sp A] protected[debox](as: Array[A], bs: Array[Byte], n: Int, u
 
   def addAll(items: Iterable[A]): Unit = items.foreach(add)
 
-  def -=(item: A): Boolean = remove(item)
+  def remove(item: A): Boolean = this -= item
 
-  final def remove(item: A): Boolean = {
+  final def -=(item: A): Boolean = {
     @inline @tailrec def loop(i: Int, perturbation: Int): Boolean = {
       val j = i & mask
       val status = buckets(j)
@@ -165,13 +154,10 @@ final class Set[@sp A] protected[debox](as: Array[A], bs: Array[Byte], n: Int, u
   final def update(item: A, b: Boolean) =
     if (b) add(item) else remove(item)
 
-  def foreach(f: A => Unit) {
-    @inline @tailrec def loop(i: Int, count: Int, limit: Int): Unit =
-      if (count >= limit) ()
-      else if (buckets(i) == 3) { f(items(i)); loop(i + 1, count + 1, limit) }
-      else loop(i + 1, count, limit)
-    loop(0, 0, size)
-  }
+  def foreach(f: A => Unit): Unit =
+    cfor(0)(_ < buckets.length, _ + 1) { i =>
+      if (buckets(i) == 3) f(items(i))
+    }
 
   def map[@sp(Int, Long, Double, AnyRef) B: ClassTag](f: A => B): Set[B] = {
     val out = Set.empty[B]
@@ -208,47 +194,102 @@ final class Set[@sp A] protected[debox](as: Array[A], bs: Array[Byte], n: Int, u
     new Unit1[A]
   }
 
-  def |(that: Set[A]): Set[A] = union(that)
+  // For a lot of the following methods, there are size tests to try
+  // to make sure we're looping over the smaller of the two
+  // sets. Some things to keep in mind:
+  //
+  // 1. System.arraycopy is way faster than a loop
+  // 2. We want to avoid copying a large object and then shrinking it
+  // 3. Methods ending in = are not symmetric, the others are
+  //
+  // So where possible we'd like to be looping over a smaller set,
+  // doing membership tests against a larger set.
 
-  def union(that: Set[A]): Set[A] = {
-    if (size > that.size) return that.union(this)
-    val out = that.copy
-    foreach(out.add)
-    out
-  }
+  def union(rhs: Set[A]): Set[A] = lhs | rhs
 
-  def &(that: Set[A]): Set[A] = intersection(that)
-  
-  def intersection(that: Set[A]): Set[A] = {
-    if (size < that.size) return that.intersection(this)
-    val out = Set.empty[A]
-    foreach(a => if (that(a)) out.add(a))
-    out
-  }
+  /**
+   * Return new set which is the union of lhs and rhs.
+   * 
+   * The new set will contain all members of lhs and rhs.
+   */
+  def |(rhs: Set[A]): Set[A] =
+    if (lhs.size >= rhs.size) {
+      val out = lhs.copy
+      out |= rhs
+      out
+    } else {
+      val out = rhs.copy
+      out |= lhs
+      out
+    }
 
-  def --=(that: Set[A]): Unit =
-    if (this.size > that.size) {
-      that.foreach(remove)
+  /**
+   * Add all members of rhs to lhs.
+   */
+  def |=(rhs: Set[A]): Unit =
+    if (lhs.size >= rhs.size) {
+      cfor(0)(_ < rhs.buckets.length, _ + 1) { i =>
+        if (rhs.buckets(i) == 3) lhs += rhs.items(i)
+      }
+    } else {
+      val out = rhs.copy
+      out |= lhs
+      lhs.absorb(out)
+    }
+
+  def intersection(rhs: Set[A]): Set[A] = this & rhs
+
+  def &(rhs: Set[A]): Set[A] =
+    if (lhs.size <= rhs.size) {
+      val out = lhs.copy
+      out &= rhs
+      out
+    } else {
+      val out = rhs.copy
+      out &= lhs
+      out
+    }
+
+  /**
+   * Remove any member of this which is not in rhs.
+   */
+  def &=(rhs: Set[A]): Unit =
+    if (lhs.size <= rhs.size) {
+      cfor(0)(_ < buckets.length, _ + 1) { i =>
+        if (buckets(i) == 3 && !rhs(items(i))) {
+          buckets(i) = 2
+          len -= 1
+        }
+      }
+      if ((len >> 2) < used) shrink()
+    } else {
+      val out = rhs.copy
+      out &= lhs
+      lhs.absorb(out)
+    }
+
+  def --=(rhs: Set[A]): Unit =
+    if (lhs.size >= rhs.size) {
+      cfor(0)(_ < rhs.buckets.length, _ + 1) { i =>
+        if (rhs.buckets(i) == 3) lhs -= rhs.items(i)
+      }
     } else {
       cfor(0)(_ < buckets.length, _ + 1) { i =>
-        if (buckets(i) == 3 && !that(items(i))) {
+        if (buckets(i) == 3 && rhs(items(i))) {
           buckets(i) = 2
           len -= 1
         }
       }
     }
 
-  def --(that: Set[A]): Set[A] = difference(that)
+  def difference(rhs: Set[A]): Set[A] = lhs -- rhs
   
-  def difference(that: Set[A]): Set[A] = {
-    val out = Set.empty[A]
-    foreach(a => if (!that(a)) out.add(a))
+  def --(rhs: Set[A]): Set[A] = {
+    val out = lhs.copy
+    out --= rhs
     out
   }
   
-  def extend(that: Set[A]): Unit =
-    foreach(add)
-
   def count(p: A => Boolean) =
     fold(0)((n, a) => if (p(a)) n + 1 else n)
 
@@ -266,32 +307,86 @@ final class Set[@sp A] protected[debox](as: Array[A], bs: Array[Byte], n: Int, u
 
   def findAll(p: A => Boolean): Set[A] = {
     val out = Set.empty[A]
-    foreach(a => if (p(a)) out.add(a))
+    cfor(0)(_ < buckets.length, _ + 1) { i =>
+      if (buckets(i) == 3) out += items(i)
+    }
     out
   }
 
   def partition(p: A => Boolean): (Set[A], Set[A]) = {
     val no = Set.empty[A]
     val yes = Set.empty[A]
-    foreach(a => if (p(a)) yes.add(a) else no.add(a))
+    cfor(0)(_ < buckets.length, _ + 1) { i =>
+      if (buckets(i) == 3) {
+        val a = items(i)
+        if (p(a)) yes += a else no += a
+      }
+    }
     (no, yes)
   }
 
   def loopWhile(p: A => Boolean): Int = {
-    @inline @tailrec def loop(i: Int, limit: Int): Int = {
-      if (buckets(i) == 3 && !p(items(i))) i
-      else if (i < limit) loop(i + 1, limit)
-      else -1
+    cfor(0)(_ < buckets.length, _ + 1) { i =>
+      if (buckets(i) == 3 && !p(items(i))) return i
     }
-    loop(0, buckets.length - 1)
+    -1
   }
 
   def loopUntil(p: A => Boolean): Int = {
-    @inline @tailrec def loop(i: Int, limit: Int): Int = {
-      if (buckets(i) == 3 && p(items(i))) i
-      else if (i < limit) loop(i + 1, limit)
-      else -1
+    cfor(0)(_ < buckets.length, _ + 1) { i =>
+      if (buckets(i) == 3 && p(items(i))) return i
     }
-    loop(0, buckets.length - 1)
+    -1
+  }
+
+  def iterator: Iterator[A] = {
+    var i = 0
+    while (i < buckets.length && buckets(i) != 3) i += 1
+    new Iterator[A] {
+      var index = i
+      def hasNext: Boolean = index < buckets.length
+      def next: A = {
+        val item = items(index)
+        index += 1
+        while (index < buckets.length && buckets(index) != 3) index += 1
+        item
+      }
+    }
+  }
+
+  def toIterable: Iterable[A] =
+    new Iterable[A] {
+      override def size: Int = lhs.size
+      def iterator: Iterator[A] = lhs.iterator
+      override def foreach[U](f: A => U): Unit = lhs.foreach(a => f(a))
+    }
+}
+
+
+object Set {
+  def empty[@sp A: ClassTag] = new Set(new Array[A](8), new Array[Byte](8), 0, 0)
+
+  def ofSize[@sp A: ClassTag](n: Int) = {
+    val sz = Util.nextPowerOfTwo(n) match {
+      case n if n < 0 => throw DeboxOverflowError(n)
+      case 0 => 8
+      case n => n
+    }
+    new Set(new Array[A](sz), new Array[Byte](sz), 0, 0)
+  }
+
+  def apply[@sp A: ClassTag](as: A*): Set[A] = fromIterable(as)
+
+  def fromArray[@sp A: ClassTag](as: Array[A]): Set[A] = {
+    val n = spire.math.max(8, as.length + as.length / 2)
+    val set = ofSize[A](n)
+    cfor(0)(_ < as.length, _ + 1)(i => set.add(as(i)))
+    set
+  }
+
+  def fromIterable[@sp A: ClassTag](as: Iterable[A]): Set[A] = {
+    val set = empty[A]
+    set ++= as
+    set
   }
 }

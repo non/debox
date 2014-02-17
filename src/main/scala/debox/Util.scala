@@ -9,6 +9,10 @@ import language.experimental.macros
 import scala.reflect.ClassTag
 import scala.reflect.macros.Context
 
+case class DeboxOverflowError(n: Int) extends Exception("size %s exceeds max" format n)
+class NotFound(k: String) extends Exception("key %s was not found" format k)
+class InvalidSizes(k: Int, v: Int) extends Exception("%s, %s" format (k, v))
+
 class Unit1[@sp A]
 
 class Unit2[@sp A, @sp B]

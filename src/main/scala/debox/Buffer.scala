@@ -43,7 +43,7 @@ import spire.syntax.all._
  * safety or protection against concurrent updates. Modify a Buffer
  * during foreach, map, iterator, etc will produce undefined results.
  */
-final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
+final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) { lhs =>
 
   var elems: Array[A] = arr
   var len: Int = n
@@ -132,7 +132,7 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
 
     var x = if (n == 0) 8 else Util.nextPowerOfTwo(n + 1)
     while (x >= 0 && x < goal) x = Util.nextPowerOfTwo(x + 1)
-    if (x < 0) sys.error("overflow")
+    if (x < 0) throw DeboxOverflowError(x)
     grow(x)
   }
 
@@ -540,6 +540,9 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
     new Buffer(arr, len)
   }
 
+  /**
+   * Add the buffer contents together, returning their sum.
+   */
   def sum(implicit ev: AdditiveMonoid[A]): A = {
     val limit = len
     var result: A = ev.zero
@@ -547,6 +550,9 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
     result
   }
 
+  /**
+   * Multiply the buffer contents together, returning their product.
+   */
   def product(implicit ev: MultiplicativeMonoid[A]): A = {
     val limit = len
     var result: A = ev.one
@@ -554,13 +560,18 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
     result
   }
 
-  def norm(k: Int)(implicit ev: Field[A], s: Signed[A], nr: NRoot[A]): A = {
+  /**
+   * Find the p-norm of the buffer's contents.
+   * 
+   * The p-norm generalizes notion of a length function.
+   */
+  def norm(p: Int)(implicit ev: Field[A], s: Signed[A], nr: NRoot[A]): A = {
     val limit = len
     var result: A = ev.one
     cfor(0)(_ < limit, _ + 1) { i =>
-      result += elems(i).abs ** k
+      result += elems(i).abs ** p
     }
-    result nroot k
+    result nroot p
   }
 
   /**
@@ -595,6 +606,19 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
     val limit = len
     cfor(1)(_ < limit, _ + 1) { i =>
       result = result max elems(i)
+    }
+    result
+  }
+
+  /**
+   * Find the mean (average) value of this buffer's contents.
+   */
+  def mean(implicit ev: Field[A]): A = {
+    if (isEmpty) throw new UnsupportedOperationException()
+    var result: A = ev.zero
+    val limit = len
+    cfor(0)(_ < limit, _ + 1) { i =>
+      result = (result * i / (i + 1)) + (elems(i) / (i + 1))
     }
     result
   }
@@ -636,12 +660,12 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
    * 
    * Creating the Iterable[A] instance is an O(1) operation.
    */
-  def toIterable: Iterable[A] = {
-    val self = this
+  def toIterable: Iterable[A] =
     new Iterable[A] {
-      def iterator: Iterator[A] = self.iterator
+      override def size: Int = lhs.length
+      def iterator: Iterator[A] = lhs.iterator
+      override def foreach[U](f: A => U): Unit = lhs.foreach(a => f(a))
     }
-  }
 
   /**
    * Create a Vector[A] from this buffer's elements.

@@ -6,13 +6,14 @@ import scala.{specialized => spec}
 import scala.collection.mutable
 import scala.util.Random._
 
+import spire.syntax.cfor._
+
 import com.google.caliper.Param
 
 object SetBenchmarks extends MyRunner(classOf[SetBenchmarks])
 
 class SetBenchmarks extends MyBenchmark {
   @Param(Array("6", "8", "11", "14", "17", "20"))
-  //@Param(Array("11"))
   var pow: Int = 0
 
   var data: Array[Long] = null
@@ -22,204 +23,138 @@ class SetBenchmarks extends MyBenchmark {
   var javaSet: java.util.HashSet[Long] = null
   var deboxSet: debox.Set[Long] = null
 
-  var j = 1
+  var scalaSet2: mutable.Set[Long] = null
+  var javaSet2: java.util.HashSet[Long] = null
+  var deboxSet2: debox.Set[Long] = null
 
   override protected def setUp() {
     val n = scala.math.pow(2, pow).toInt
-    data = init(n)(nextLong).map(n => if(n == 0L) n + 1 else n)
-    data2 = init(n / 10)(nextLong).map(n => if(n == 0L) n + 1 else n)
+    data = init(n)(nextLong).map(x => if (x == 0L) 1L else x)
+    data2 = init(n)(nextLong).map(x => if (x == 0L) 1L else x)
 
     scalaSet = mutable.Set.empty[Long]
-    javaSet = new java.util.HashSet[Long]()
+    javaSet = new java.util.HashSet[Long]
     deboxSet = debox.Set.empty[Long]
 
-    var i = 0
-    while (i < n) {
-      val item = data(i)
-      scalaSet.add(item)
-      javaSet.add(item)
-      deboxSet.add(item)
-      i += 1
+    cfor(0)(_ < data.length, _ + 1) { i =>
+      scalaSet.add(data(i))
+      javaSet.add(data(i))
+      deboxSet.add(data(i))
     }
-  }
 
-  // building benchmark
-  def timeBuildScalaSet(reps: Int) = run(reps)(buildScalaSet)
-  def timeBuildJavaSet(reps: Int) = run(reps)(buildJavaSet)
-  def timeBuildDeboxSet(reps: Int) = run(reps)(buildDeboxSet)
-  
-  // foreach benchmark
-  def timeForeachScalaSet(reps: Int) = run(reps)(foreachScalaSet)
-  def timeForeachJavaSet(reps: Int) = run(reps)(foreachScalaSet)
-  def timeForeachDeboxSet(reps: Int) = run(reps)(foreachDeboxSet)
-  //def timeForeachMacroDeboxSet(reps: Int) = run(reps)(foreachMacroDeboxSet)
-  
-  // contains benchmark
-  def timeContainsScalaSet(reps: Int) = run(reps)(containsScalaSet)
-  def timeContainsJavaSet(reps: Int) = run(reps)(containsJavaSet)
-  def timeContainsDeboxSet(reps: Int) = run(reps)(containsDeboxSet)
-  
-  // map benchmark
-  def timeMapScalaSet(reps: Int) = run(reps)(mapScalaSet)
-  def timeMapDeboxSet(reps: Int) = run(reps)(mapDeboxSet)
-  //def timeMapMacroDeboxSet(reps: Int) = run(reps)(mapMacroDeboxSet)
+    scalaSet2 = mutable.Set.empty[Long]
+    javaSet2 = new java.util.HashSet[Long]
+    deboxSet2 = debox.Set.empty[Long]
 
-  def timeFoldScalaSet(reps: Int) = run(reps)(foldScalaSet)
-  def timeFoldDeboxSet(reps: Int) = run(reps)(foldDeboxSet)
-  //def timeFoldMacroDeboxSet(reps: Int) = run(reps)(foldMacroDeboxSet)
-
-  //def timePartitionScalaSet(reps: Int) = run(reps)(partitionScalaSet)
-  //def timePartitionDeboxSet(reps: Int) = run(reps)(partitionDeboxSet)
-
-  // building benchmark
-  def buildScalaSet: Int = {
-    val s = mutable.Set.empty[Long]
-    var i = 0
-    val len = data.length
-    while (i < len) { s.add(data(i)); i += 1 }
-    s.size
-  }
-
-  def buildJavaSet: Int = {
-    val s = new java.util.HashSet[Long]
-    var i = 0
-    val len = data.length
-    while (i < len) { s.add(data(i)); i += 1 }
-    s.size
-  }
-
-  def buildDeboxSet: Int = {
-    val s = debox.Set.empty[Long]
-    var i = 0
-    val len = data.length
-    while (i < len) { s.add(data(i)); i += 1 }
-    s.size
-  }
-
-  // foreach benchmark
-  def foreachScalaSet: Long = {
-    var t = 0L
-    scalaSet.foreach(n => t += 4 * n)
-    scalaSet.foreach(n => t -= 2 * n)
-    scalaSet.foreach(n => t += n)
-    scalaSet.foreach(n => t -= 2 * n)
-    t
-  }
-
-  def foreachJavaSet: Long = {
-    var t = 0L
-    val it1 = javaSet.iterator; while (it1.hasNext) { t += 4 * it1.next() }
-    val it2 = javaSet.iterator; while (it2.hasNext) { t -= 2 * it2.next() }
-    val it3 = javaSet.iterator; while (it3.hasNext) { t += it3.next() }
-    val it4 = javaSet.iterator; while (it4.hasNext) { t -= 2 * it4.next() }
-    t
-  }
-
-  def foreachDeboxSet: Long = {
-    var t = 0L
-    deboxSet.foreach(n => t += 4 * n)
-    deboxSet.foreach(n => t -= 2 * n)
-    deboxSet.foreach(n => t += n)
-    deboxSet.foreach(n => t -= 2 * n)
-    t
-  }
-
-  // def foreachMacroDeboxSet: Long = {
-  //   var t = 0L
-  //   deboxSet.foreach_(n => t += 4 * n)
-  //   deboxSet.foreach_(n => t -= 2 * n)
-  //   deboxSet.foreach_(n => t += n)
-  //   deboxSet.foreach_(n => t -= 2 * n)
-  //   t
-  // }
-
-  // contains benchmark
-  def containsScalaSet: Long = {
-    var i = 0
-    var len = data.length
-    var t = 0
-    while (i < len) { if (scalaSet(data(i))) t += 1; i += 1 }
-    i = 0
-    len = data2.length
-    while (i < len) { if (scalaSet(data2(i))) t += 1; i += 1 }
-    t
-  }
-
-  def containsJavaSet: Long = {
-    var i = 0
-    var len = data.length
-    var t = 0
-    while (i < len) { if (javaSet.contains(data(i))) t += 1; i += 1 }
-    i = 0
-    len = data2.length
-    while (i < len) { if (javaSet.contains(data2(i))) t += 1; i += 1 }
-    t
-  }
-
-  def containsDeboxSet: Long = {
-    var i = 0
-    var len = data.length
-    var t = 0
-    while (i < len) { if (deboxSet(data(i))) t += 1; i += 1 }
-    i = 0
-    len = data2.length
-    while (i < len) { if (deboxSet(data2(i))) t += 1; i += 1 }
-    t
+    cfor(0)(_ < data2.length, _ + 1) { i =>
+      scalaSet2.add(data2(i))
+      javaSet2.add(data2(i))
+      deboxSet2.add(data2(i))
+    }
   }
 
   // map
   val ms = implicitly[ClassTag[Int]]
 
-  def mapScalaSet = {
+  // build benchmark
+  def timeBuildScalaSet(reps: Int) = run(reps) {
+    val s = mutable.Set.empty[Long]
+    cfor(0)(_ < data.length, _ + 1) { i => s.add(data(i)) }
+    s.size
+  }
+  def timeBuildJavaSet(reps: Int) = run(reps) {
+    val s = new java.util.HashSet[Long]
+    cfor(0)(_ < data.length, _ + 1) { i => s.add(data(i)) }
+    s.size
+  }
+  def timeBuildDeboxSet(reps: Int) = run(reps) {
+    val s = debox.Set.empty[Long]
+    cfor(0)(_ < data.length, _ + 1) { i => s.add(data(i)) }
+    s.size
+  }
+  
+  // foreach benchmark
+  def timeForeachScalaSet(reps: Int) = run(reps) {
+    var t = 0L
+    scalaSet.foreach(t += 4 * _)
+    // scalaSet.foreach(t -= 2 * _)
+    // scalaSet.foreach(t += _)
+    // scalaSet.foreach(t -= 2 * _)
+    t
+  }
+  def timeForeachJavaSet(reps: Int) = run(reps) {
+    var t = 0L
+    val it1 = javaSet.iterator; while (it1.hasNext) { t += 4 * it1.next }
+    // val it2 = javaSet.iterator; while (it2.hasNext) { t -= 2 * it2.next }
+    // val it3 = javaSet.iterator; while (it3.hasNext) { t += it3.next }
+    // val it4 = javaSet.iterator; while (it4.hasNext) { t -= 2 * it4.next }
+    t
+  }
+  def timeForeachDeboxSet(reps: Int) = run(reps) {
+    var t = 0L
+    deboxSet.foreach(t += 4 * _)
+    // deboxSet.foreach(t -= 2 * _)
+    // deboxSet.foreach(t += _)
+    // deboxSet.foreach(t -= 2 * _)
+    t
+  }
+  
+  // contains benchmark
+  def timeContainsScalaSet(reps: Int) = run(reps) {
+    var t = 0
+    cfor(0)(_ < data.length, _ + 1) { i => if (scalaSet(data(i))) t += 1 }
+    cfor(0)(_ < data2.length, _ + 1) { i => if (scalaSet(data2(i))) t += 1 }
+    t
+  }
+  def timeContainsJavaSet(reps: Int) = run(reps) {
+    var t = 0
+    cfor(0)(_ < data.length, _ + 1) { i => if (javaSet.contains(data(i))) t += 1 }
+    cfor(0)(_ < data2.length, _ + 1) { i => if (javaSet.contains(data2(i))) t += 1 }
+    t
+  }
+  def timeContainsDeboxSet(reps: Int) = run(reps) {
+    var t = 0
+    cfor(0)(_ < data.length, _ + 1) { i => if (deboxSet(data(i))) t += 1 }
+    cfor(0)(_ < data2.length, _ + 1) { i => if (deboxSet(data2(i))) t += 1 }
+    t
+  }
+  
+  // map benchmark
+  def timeMapScalaSet(reps: Int) = run(reps) {
     val a = scalaSet.map(_.toInt + 3)
     val b = scalaSet.map(_.toString)
     val c = scalaSet.map(_ & 0xffff)
     (a, b, c)
   }
-    
-  def mapDeboxSet = {
+  def timeMapDeboxSet(reps: Int) = run(reps) {
     val a = deboxSet.map(_.toInt + 3)
     val b = deboxSet.map(_.toString)
     val c = deboxSet.map(_ & 0xffff)
     (a, b, c)
   }
 
-  //def mapMacroDeboxSet = {
-  //  val a = deboxSet.map_[Int](_.toInt + 3)(implicitly[ClassTag[Int]])
-  //  val b = deboxSet.map_(_.toString)(implicitly[ClassTag[String]])
-  //  val c = deboxSet.map_(_ & 0xffff)(implicitly[ClassTag[Long]])
-  //  (a, b, c)
-  //}
-
-  def foldScalaSet = {
+  // fold benchmark
+  def timeFoldScalaSet(reps: Int) = run(reps) {
     val zmin = scalaSet.foldLeft(Long.MaxValue)((x, y) => if (y < x) y else x)
     val zmax = scalaSet.foldLeft(Long.MinValue)((x, y) => if (y > x) y else x)
     val t = scalaSet.foldLeft(0L)((t: Long, x: Long) => t + x)
     (zmin, zmax, t)
   }
-  
-  def foldDeboxSet = {
+  def timeFoldDeboxSet(reps: Int) = run(reps) {
     val zmin = deboxSet.fold(Long.MaxValue)((x, y) => if (y < x) y else x)
     val zmax = deboxSet.fold(Long.MinValue)((x, y) => if (y > x) y else x)
     val t = deboxSet.fold(0L)((x, y) => x + y)
     (zmin, zmax, t)
   }
 
-  //def foldMacroDeboxSet = {
-  //  val zmin = deboxSet.fold_(Long.MaxValue)((x, y) => if (y < x) y else x)
-  //  val zmax = deboxSet.fold_(Long.MinValue)((x, y) => if (y > x) y else x)
-  //  val t = deboxSet.fold_(0L)((x, y) => x + y)
-  //  (zmin, zmax, t)
-  //}
-
-  def partitionScalaSet = {
+  // partition benchmark
+  def timePartitionScalaSet(reps: Int) = run(reps) {
     val a = scalaSet.partition(_ % 2 == 0)
     val b = scalaSet.partition(_ % 3 == 0)
     val c = scalaSet.partition(_ % 5 == 0)
     (a, b, c)
   }
-  
-  def partitionDeboxSet = {
+  def timePartitionDeboxSet(reps: Int) = run(reps) {
     val a = deboxSet.partition(_ % 2 == 0)
     val b = deboxSet.partition(_ % 3 == 0)
     val c = deboxSet.partition(_ % 5 == 0)
