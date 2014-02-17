@@ -175,7 +175,9 @@ final class Set[@sp A] protected[debox](as: Array[A], bs: Array[Byte], n: Int, u
 
   def map[@sp(Int, Long, Double, AnyRef) B: ClassTag](f: A => B): Set[B] = {
     val out = Set.empty[B]
-    foreach(a => out.add(f(a)))
+    cfor(0)(_ < buckets.length, _ + 1) { i =>
+      if (buckets(i) == 3) out.add(f(items(i)))
+    }
     out
   }
 
