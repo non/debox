@@ -151,6 +151,17 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
     elems = arr
   }
 
+  private[this] def shrinkIfNecessary(): Unit = {
+    if (elems.length > 8 && len <= (elems.length >> 2)) shrink() else ()
+  }
+
+  private[this] def shrink(): Unit = {
+    val n = Util.nextPowerOfTwo(elems.length >> 2)
+    val arr = new Array[A](n)
+    System.arraycopy(elems, 0, arr, 0, len)
+    elems = arr
+  }
+
   /**
    * Return the length of this Buffer as an Int.
    * 
@@ -394,6 +405,7 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
       val a = elems(last)
       elems(last) = null.asInstanceOf[A]
       len = last
+      shrinkIfNecessary()
       a
     } else if (i == last) {
       pop
@@ -414,6 +426,7 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
       val last = len - 1
       val a = elems(last)
       len = last
+      shrinkIfNecessary()
       a
     } else {
       throw new IndexOutOfBoundsException("0")
@@ -431,6 +444,26 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
    * This is an O(1) operation.
    */
   def clear: Unit = absorb(Buffer.empty[A])
+
+  /**
+   * Compacts the buffer's internal array to remove extra free space.
+   * 
+   * This operation should be used it a buffer is not likely to grow
+   * again, and the user wants to free any additional memory that may
+   * be available.
+   * 
+   * In general, a buffer that has only grown will use 1-2x of its
+   * apparent size. Buffers that have been reduced in size may be
+   * using up to 4x the apparent size.
+   */
+  def compact: Unit =
+    if (len < elems.length) {
+      val arr = new Array[A](len)
+      System.arraycopy(elems, 0, arr, 0, len)
+      elems = arr
+    } else {
+      ()
+    }
 
   /**
    * Return a new buffer which consists of the elements [i, j).

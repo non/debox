@@ -95,6 +95,15 @@ abstract class BufferCheck[A: Arbitrary: ClassTag]
     }
   }
 
+  property("compact") {
+    forAll { (xs: List[A], ys: List[A]) =>
+      val buf = Buffer.fromIterable(xs)
+      buf ++= ys
+      buf.compact
+      buf.elems.length shouldBe buf.length
+    }
+  }
+
   property("adding elements (+=)") {
     forAll { xs: List[A] =>
       val buf = Buffer.empty[A]
@@ -116,6 +125,17 @@ abstract class BufferCheck[A: Arbitrary: ClassTag]
         control.remove(control.length - 1)
         hybridEq(buf, control) shouldBe true
       }
+    }
+  }
+
+  property("shrinking during removal") {
+    forAll { a: A =>
+      val buf = Buffer.empty[A]
+      for (_ <- 0 until 1000) buf += a
+      val n1 = buf.elems.length
+      for (_ <- 0 until 900) buf.pop
+      val n2 = buf.elems.length
+      n2 should be < n1
     }
   }
 
