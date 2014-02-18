@@ -4,9 +4,10 @@ import scala.{specialized => spec}
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random._
 
-import com.google.caliper.Param
-
+import spire.syntax.cfor._
 import debox._
+
+import com.google.caliper.Param
 
 object BufferBenchmarks extends MyRunner(classOf[BufferBenchmarks])
 
@@ -21,66 +22,48 @@ class BufferBenchmarks extends MyBenchmark {
   override protected def setUp() {
     val n = scala.math.pow(2, pow).toInt
     data = init(n)(nextLong)
-    abuf = ArrayBuffer(data:_*)
+    abuf = ArrayBuffer(data: _*)
     sbuf = Buffer.fromArray(data)
   }
 
-  def appendArrayBuffer:Long = {
-    val len = data.length
+  def timeAppendArrayBuffer(reps: Int) = run(reps) {
     val bf = scala.collection.mutable.ArrayBuffer.empty[Long]
-    var i = 0
-    while (i < len) {
-      bf.append(data(i))
-      i += 1
-    }
-    var total = 0L
-    i = 0
-    while (i < len) {
-      total += bf(i)
-      i += 1
-    }
-    total
+    cfor(0)(_ < data.length, _ + 1) { i => bf.append(data(i)) }
+    bf.length
   }
 
-  def appendDeboxBuffer:Long = {
-    val len = data.length
+  def timeAppendDeboxBuffer(reps: Int) = run(reps) {
     val bf = Buffer.empty[Long]
-    var i = 0
-    while (i < len) {
-      bf.append(data(i))
-      i += 1
-    }
-    var total = 0L
-    i = 0
-    while (i < len) {
-      total += bf(i)
-      i += 1
-    }
-    total
+    cfor(0)(_ < data.length, _ + 1) { i => bf.append(data(i)) }
+    bf.length
   }
 
-  def foreachArrayBuffer:Long = {
-    var i = 0
-    var total = 0L
-    abuf.foreach(total += _)
-    total
+  def timeRemoveArrayBuffer(reps: Int) = run(reps) {
+    val bf = abuf.clone
+    while (bf.nonEmpty) bf.remove(bf.length - 1)
+    bf.length
   }
 
-  def foreachDeboxBuffer:Long = {
-    var i = 0
-    var total = 0L
-    sbuf.foreach(total += _)
-    total
+  def timeRemoveDeboxBuffer(reps: Int) = run(reps) {
+    val bf = sbuf.copy
+    while (bf.nonEmpty) bf.remove(bf.length - 1)
+    bf.length
   }
 
-  def foreachArray:Long = {
-    var i = 0
-    var total = 0L
-    data.foreach(total += _)
-    total
+  def timeForeachArrayBuffer(reps: Int) = run(reps) {
+    var t = 0L; abuf.foreach(t += _); t
   }
 
-  def whileArrayBuffer:Long = {
+  def timeForeachDeboxBuffer(reps: Int) = run(reps) {
+    var t = 0L; sbuf.foreach(t += _); t
+  }
+
+  def timeForeachArray(reps: Int) = run(reps) {
+    var t = 0L; data.foreach(t += _); t
+  }
+
+  def timeWhileArrayBuffer(reps: Int) = run(reps)(whileArrayBuffer)
+  def whileArrayBuffer: Long = {
     var i = 0
     val len = abuf.length
     var total = 0L
@@ -91,7 +74,8 @@ class BufferBenchmarks extends MyBenchmark {
     total
   }
 
-  def whileDeboxBuffer:Long = {
+  def timeWhileDeboxBuffer(reps: Int) = run(reps)(whileDeboxBuffer)
+  def whileDeboxBuffer: Long = {
     var i = 0
     val len = sbuf.length
     var total = 0L
@@ -102,7 +86,8 @@ class BufferBenchmarks extends MyBenchmark {
     total
   }
 
-  def whileArray:Long = {
+  def timeWhileArray(reps: Int) = run(reps)(whileArray)
+  def whileArray: Long = {
     var i = 0
     val len = data.length
     var total = 0L
@@ -112,15 +97,4 @@ class BufferBenchmarks extends MyBenchmark {
     }
     total
   }
-
-  def timeAppendArrayBuffer(reps:Int) = run(reps)(appendArrayBuffer)
-  def timeAppendDeboxBuffer(reps:Int) = run(reps)(appendDeboxBuffer)
-
-  def timeForeachArrayBuffer(reps:Int) = run(reps)(foreachArrayBuffer)
-  def timeForeachDeboxBuffer(reps:Int) = run(reps)(foreachDeboxBuffer)
-  def timeForeachArray(reps:Int) = run(reps)(foreachArray)
-
-  def timeWhileArrayBuffer(reps:Int) = run(reps)(whileArrayBuffer)
-  def timeWhileDeboxBuffer(reps:Int) = run(reps)(whileDeboxBuffer)
-  def timeWhileArray(reps:Int) = run(reps)(whileArray)
 }

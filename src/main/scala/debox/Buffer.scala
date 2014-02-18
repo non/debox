@@ -125,15 +125,16 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
    * This is an amortized O(1) operation; most calls will simply
    * return without growing.
    */
-  private[this] def growIfNecessary(delta: Int): Unit = {
+  private[this] def growIfNecessary(delta: Int): Unit1[A] = {
     val goal = len + delta
     val n = elems.length
-    if (n >= goal) return ()
+    if (n >= goal) return null
 
     var x = if (n == 0) 8 else Util.nextPowerOfTwo(n + 1)
     while (x >= 0 && x < goal) x = Util.nextPowerOfTwo(x + 1)
     if (x < 0) throw DeboxOverflowError(x)
     grow(x)
+    null
   }
 
   /**
@@ -145,21 +146,11 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
    * 
    * Growing is an O(n) operation, where n is buffer.length.
    */
-  private[this] def grow(n: Int): Unit = {
+  private[this] def grow(n: Int): Unit1[A] = {
     val arr = new Array[A](n)
     System.arraycopy(elems, 0, arr, 0, len)
     elems = arr
-  }
-
-  private[this] def shrinkIfNecessary(): Unit = {
-    if (elems.length > 8 && len <= (elems.length >> 2)) shrink() else ()
-  }
-
-  private[this] def shrink(): Unit = {
-    val n = Util.nextPowerOfTwo(elems.length >> 2)
-    val arr = new Array[A](n)
-    System.arraycopy(elems, 0, arr, 0, len)
-    elems = arr
+    null
   }
 
   /**
@@ -184,7 +175,7 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
   def isEmpty: Boolean = len == 0
 
   /**
-   * Return true if the Buffer is empty, false otherwise.
+   * Return true if the Buffer is non-empty, false otherwise.
    * 
    * This is an O(1) operation.
    */
@@ -217,7 +208,7 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
   /**
    * This method is a synonym for append.
    */
-  def +=(a: A): Unit = append(a)
+  def append(a: A): Unit = this += a
 
   /**
    * Append a new value to the end of the buffer.
@@ -228,7 +219,7 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
    * 
    * This is an amortized O(1) operation.
    */
-  def append(a: A): Unit = {
+  def +=(a: A): Unit = {
     val n = len
     if (n >= elems.length) grow(Util.nextPowerOfTwo(n + 1))
     elems(n) = a
@@ -268,6 +259,11 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
   def prepend(a: A): Unit = insert(0, a)
 
   /**
+   * This is a synonym for ++.
+   */
+  def concat(buf: Buffer[A]): Buffer[A] = this ++ buf
+
+  /**
    * Concatenate two buffers, returning a new buffer.
    * 
    * This method does not modify either input buffer, but allocates
@@ -277,46 +273,44 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
    * input buffers.
    */
   def ++(buf: Buffer[A]): Buffer[A] = {
-    val result = this.copy
-    result ++= buf
-    result
+    val result = this.copy; result ++= buf; result
   }
 
   /**
-   * This is a synonym for extend.
+   * This is a synonym for ++=.
    */
-  def ++=(arr: Array[A]): Unit = extend(arr)
+  def extend(arr: Array[A]): Unit = this ++= arr
 
   /**
    * This is a synonym for extend.
    */
-  def ++=(buf: Buffer[A]): Unit = extend(buf)
+  def extend(buf: Buffer[A]): Unit = this ++= buf
 
   /**
    * This is a synonym for extend.
    */
-  def ++=(items: Iterable[A]): Unit = extend(items)
+  def extend(items: Iterable[A]): Unit = this ++= items
 
   /**
    * Append the values in arr to the end of the buffer.
    * 
    * This method is an O(m) operation, where m is the length of arr.
    */
-  def extend(arr: Array[A]): Unit = splice(len, arr)
+  def ++=(arr: Array[A]): Unit = splice(len, arr)
 
   /**
    * Append the values in buf to the end of the buffer.
    * 
    * This method is an O(m) operation, where m is the length of buf.
    */
-  def extend(buf: Buffer[A]): Unit = splice(len, buf)
+  def ++=(buf: Buffer[A]): Unit = splice(len, buf)
 
   /**
    * Append the values in elems to the end of the buffer.
    * 
    * This method is an O(m) operation, where m is the length of items.
    */
-  def extend(items: Iterable[A]): Unit = items.foreach(append)
+  def ++=(items: Iterable[A]): Unit = items.foreach(append)
 
   /**
    * Splice the values in arr into the buffer at index i.
@@ -405,7 +399,6 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
       val a = elems(last)
       elems(last) = null.asInstanceOf[A]
       len = last
-      shrinkIfNecessary()
       a
     } else if (i == last) {
       pop
@@ -426,7 +419,6 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
       val last = len - 1
       val a = elems(last)
       len = last
-      shrinkIfNecessary()
       a
     } else {
       throw new IndexOutOfBoundsException("0")
@@ -443,7 +435,7 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
    * 
    * This is an O(1) operation.
    */
-  def clear: Unit = absorb(Buffer.empty[A])
+  def clear: Unit1[A] = { absorb(Buffer.empty[A]); null }
 
   /**
    * Compacts the buffer's internal array to remove extra free space.
@@ -456,14 +448,14 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
    * apparent size. Buffers that have been reduced in size may be
    * using up to 4x the apparent size.
    */
-  def compact: Unit =
+  def compact: Unit1[A] = {
     if (len < elems.length) {
       val arr = new Array[A](len)
       System.arraycopy(elems, 0, arr, 0, len)
       elems = arr
-    } else {
-      ()
     }
+    null
+  }
 
   /**
    * Return a new buffer which consists of the elements [i, j).
@@ -632,7 +624,7 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
    * toIterable.min.
    */
   def sort(implicit o: Order[A]): Unit =
-    QuickSort.qsort(elems, 0, len)
+    QuickSort.qsort(elems, 0, len - 1)
 
   /**
    * Create an array out of the elements in the buffer.
@@ -704,6 +696,9 @@ object Buffer {
   /**
    * Allocate an empty Buffer, capable of holding n items without
    * resizing itself.
+   * 
+   * This method is useful if you know you'll be adding a large number
+   * of elements in advance and you want to save a few resizes.
    */
   def ofSize[@sp A: ClassTag](n: Int): Buffer[A] =
     new Buffer(new Array[A](Util.nextPowerOfTwo(n)), 0)

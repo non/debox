@@ -8,10 +8,14 @@ import org.scalacheck._
 import Gen._
 import Arbitrary.arbitrary
 
+import spire.algebra.Order
+import spire.compat._
+import spire.std.any._
+
 import scala.collection.mutable
 import scala.reflect._
 
-abstract class BufferCheck[A: Arbitrary: ClassTag]
+abstract class BufferCheck[A: Arbitrary: ClassTag: Order]
     extends PropSpec with Matchers with GeneratorDrivenPropertyChecks {
 
   import scala.collection.immutable.Set
@@ -128,17 +132,6 @@ abstract class BufferCheck[A: Arbitrary: ClassTag]
     }
   }
 
-  property("shrinking during removal") {
-    forAll { a: A =>
-      val buf = Buffer.empty[A]
-      for (_ <- 0 until 1000) buf += a
-      val n1 = buf.elems.length
-      for (_ <- 0 until 900) buf.pop
-      val n2 = buf.elems.length
-      n2 should be < n1
-    }
-  }
-
   property("random append and pop") {
     forAll { (steps: List[Option[A]]) =>
       val buf = Buffer.empty[A]
@@ -190,6 +183,15 @@ abstract class BufferCheck[A: Arbitrary: ClassTag]
       control.insertAll(i, ys)
       hybridEq(buf1, control) shouldBe true
       hybridEq(buf2, control) shouldBe true
+    }
+  }
+
+  property("sort") {
+    forAll { xs: List[A] =>
+      val a = Buffer.fromIterable(xs)
+      a.sort
+      val b = Buffer.fromIterable(xs.sorted)
+      a shouldBe b
     }
   }
 

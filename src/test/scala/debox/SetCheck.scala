@@ -8,14 +8,17 @@ import org.scalacheck._
 import Gen._
 import Arbitrary.arbitrary
 
+import spire.algebra.Order
+import spire.std.any._
+
 import scala.collection.mutable
 import scala.reflect._
 
-abstract class SetCheck[A: Arbitrary: ClassTag]
+abstract class SetCheck[A: Arbitrary: ClassTag: Order]
     extends PropSpec with Matchers with GeneratorDrivenPropertyChecks {
 
   import scala.collection.immutable.Set
-  import debox.{Set => DSet}
+  import debox.{Set => DSet, Map => DMap}
 
   def hybridEq[A](d: DSet[A], s: mutable.Set[A]): Boolean =
     d.size == s.size && d.forall(s.contains)
@@ -166,6 +169,13 @@ abstract class SetCheck[A: Arbitrary: ClassTag]
     }
   }
 
+  property("map composition") {
+    forAll { (xs: Set[A], f: A => A, g: A => A) =>
+      val set = DSet.fromIterable(xs)
+      set.map(a => g(f(a))) shouldBe set.map(f).map(g)
+    }
+  }
+
   property("partition") {
     forAll { (xs: Set[A], f: A => Boolean) =>
       val a = DSet.fromIterable(xs)
@@ -173,6 +183,51 @@ abstract class SetCheck[A: Arbitrary: ClassTag]
       b.foreach { x => a(x) shouldBe true }
       c.foreach { x => a(x) shouldBe true }
       a.size shouldBe (b.size + c.size)
+      b.exists(f) shouldBe false
+      c.forall(f) shouldBe true
+    }
+  }
+
+  property("find / exists") {
+    forAll { (xs: Set[A], p: A => Boolean) =>
+      val a = DSet.fromIterable(xs)
+      a.find(p).isDefined shouldBe a.exists(p)
+    }
+  }
+
+  property("findAll / count") {
+    forAll { (xs: Set[A], p: A => Boolean) =>
+      val a = DSet.fromIterable(xs)
+      a.findAll(p).size shouldBe a.count(p)
+    }
+  }
+
+  property("findAll / filterSelf") {
+    forAll { (xs: Set[A], p: A => Boolean) =>
+      val a = DSet.fromIterable(xs)
+      val b = DSet.fromIterable(xs)
+      a.filterSelf(p)
+      a shouldBe b.findAll(p)
+    }
+  }
+
+  property("toBuffer") {
+    forAll { (xs: Array[A]) =>
+      val set1 = DSet.fromArray(xs)
+      val buf1 = set1.toBuffer
+      val buf2 = Buffer.fromArray(xs)
+      buf1.sort
+      buf2.sort
+      //buf1 shouldBe buf2
+    }
+  }
+
+  property("toMap") {
+    forAll { (xs: List[A]) =>
+      val set1 = DSet.fromIterable(xs)
+      val map1 = set1.toMap(a => a)
+      val map2 = DMap.fromIterable(xs.map(a => (a, a)))
+      map1 shouldBe map2
     }
   }
 }

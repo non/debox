@@ -69,7 +69,24 @@ class SetBenchmarks extends MyBenchmark {
   }
   def timeBuildDeboxSet(reps: Int) = run(reps) {
     val s = debox.Set.empty[Long]
-    cfor(0)(_ < data.length, _ + 1) { i => s.add(data(i)) }
+    cfor(0)(_ < data.length, _ + 1) { i => s += data(i) }
+    s.size
+  }
+
+  // unbuild benchmark
+  def timeUnbuildScalaSet(reps: Int) = run(reps) {
+    val s = scalaSet.clone
+    cfor(0)(_ < data.length, _ + 1) { i => s.remove(data(i)) }
+    s.size
+  }
+  def timeUnbuildJavaSet(reps: Int) = run(reps) {
+    val s = javaSet.clone.asInstanceOf[java.util.HashSet[Long]]
+    cfor(0)(_ < data.length, _ + 1) { i => s.remove(data(i)) }
+    s.size
+  }
+  def timeUnbuildDeboxSet(reps: Int) = run(reps) {
+    val s = deboxSet.copy
+    cfor(0)(_ < data.length, _ + 1) { i => s -= data(i) }
     s.size
   }
   
