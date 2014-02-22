@@ -17,7 +17,7 @@ import spire.syntax.cfor._
  * When the type A is known (or the caller is specialized on A),
  * Set[A] will store the values in an unboxed array.
  */
-final class Set[@sp A] protected[debox](as: Array[A], bs: Array[Byte], n: Int, u: Int)(implicit val ct: ClassTag[A]) { lhs =>
+final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected[debox](as: Array[A], bs: Array[Byte], n: Int, u: Int)(implicit val ct: ClassTag[A]) { lhs =>
 
   // set machinery
   var items: Array[A] = as      // slots for items
@@ -26,8 +26,8 @@ final class Set[@sp A] protected[debox](as: Array[A], bs: Array[Byte], n: Int, u
   var used: Int = u             // number of used slots (used >= len)
 
   // hashing internals
-  var mask = buckets.length - 1             // size-1, used for hashing
-  var limit = (buckets.length * 0.65).toInt // point at which we should grow
+  var mask: Int = buckets.length - 1             // size-1, used for hashing
+  var limit: Int = (buckets.length * 0.65).toInt // point at which we should grow
 
   /**
    * Check if two Sets are equal.
@@ -301,7 +301,7 @@ final class Set[@sp A] protected[debox](as: Array[A], bs: Array[Byte], n: Int, u
    * 
    * This is an O(n) operation, where n is the size of the set.
    */
-  def map[@sp(Int, Long, Double, AnyRef) B: ClassTag](f: A => B): Set[B] = {
+  def map[@sp(Short, Char, Int, Float, Long, Double, AnyRef) B: ClassTag](f: A => B): Set[B] = {
     val out = Set.empty[B]
     cfor(0)(_ < buckets.length, _ + 1) { i =>
       if (buckets(i) == 3) out.add(f(items(i)))

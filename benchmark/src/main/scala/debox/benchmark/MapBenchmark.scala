@@ -5,7 +5,7 @@ import scala.{specialized => spec}
 import scala.collection.mutable
 import scala.util.Random._
 
-//import debox.Ext._
+import spire.syntax.cfor._
 
 import com.google.caliper.Param
 
@@ -13,15 +13,15 @@ object MapBenchmarks extends MyRunner(classOf[MapBenchmarks])
 
 class MapBenchmarks extends MyBenchmark {
   @Param(Array("4", "6", "8", "11", "14", "17", "20"))
-  var pow:Int = 0
+  var pow: Int = 0
 
-  var keys:Array[Int] = null
-  var vals:Array[Double] = null
-  var keys2:Array[Int] = null
+  var keys: Array[Int] = null
+  var vals: Array[Double] = null
+  var keys2: Array[Int] = null
 
-  var scalaMap:mutable.Map[Int, Double] = null
-  var javaMap:java.util.HashMap[Int, Double] = null
-  var deboxMap:debox.Map[Int, Double] = null
+  var scalaMap: mutable.Map[Int, Double] = null
+  var javaMap: java.util.HashMap[Int, Double] = null
+  var deboxMap: debox.Map[Int, Double] = null
 
   override protected def setUp() {
     val n = scala.math.pow(2, pow).toInt
@@ -34,69 +34,44 @@ class MapBenchmarks extends MyBenchmark {
     javaMap = new java.util.HashMap[Int, Double]()
     deboxMap = debox.Map.empty[Int, Double]
 
-    var i = 0
-    while (i < n) {
+    cfor(0)(_ < keys.length, _ + 1) { i =>
       scalaMap(keys(i)) = vals(i)
       javaMap.put(keys(i), vals(i))
       deboxMap(keys(i)) = vals(i)
-      i += 1
     }
   }
 
   // building benchmark
-  def timeBuildScalaMap(reps:Int) = run(reps)(buildScalaMap)
-  def timeBuildJavaMap(reps:Int) = run(reps)(buildScalaMap)
-  def timeBuildDeboxMap(reps:Int) = run(reps)(buildDeboxMap)
-  
-  // foreach benchmark
-  def timeForeachScalaMap(reps:Int) = run(reps)(foreachScalaMap)
-  def timeForeachJavaMap(reps:Int) = run(reps)(foreachJavaMap)
-  def timeForeachDeboxMap(reps:Int) = run(reps)(foreachDeboxMap)
-  //def timeForeachMacroDeboxMap(reps:Int) = run(reps)(foreachMacroDeboxMap)
-  
-  // contains benchmark
-  def timeContainsScalaMap(reps:Int) = run(reps)(containsScalaMap)
-  def timeContainsJavaMap(reps:Int) = run(reps)(containsJavaMap)
-  def timeContainsDeboxMap(reps:Int) = run(reps)(containsDeboxMap)
-
-  def buildScalaMap:Int = {
+  def timeBuildScalaMap(reps: Int) = run(reps) {
     val m = mutable.Map.empty[Int, Double]
-    var i = 0
-    val len = keys.length
-    while (i < len) { m(keys(i)) = vals(i); i += 1 }
+    cfor(0)(_ < keys.length, _ + 1) { i => m(keys(i)) = vals(i) }
     m.size
   }
 
-  def buildJavaMap:Int = {
+  def timeBuildJavaMap(reps: Int) = run(reps) {
     val m = new java.util.HashMap[Int, Double]
-    var i = 0
-    val len = keys.length
-    while (i < len) { m.put(keys(i), vals(i)); i += 1 }
+    cfor(0)(_ < keys.length, _ + 1) { i => m.put(keys(i), vals(i)) }
     m.size
   }
 
-  def buildDeboxMap:Int = {
+  def timeBuildDeboxMap(reps: Int) = run(reps) {
     val m = debox.Map.empty[Int, Double]
-    var i = 0
-    val len = keys.length
-    while (i < len) { m(keys(i)) = vals(i); i += 1 }
+    cfor(0)(_ < keys.length, _ + 1) { i => m(keys(i)) = vals(i) }
     m.size
   }
-
+  
   // foreach benchmark
-  def foreachScalaMap = {
+  def timeForeachScalaMap(reps: Int) = run(reps) {
     var ks = 0
     var vs = 0.0
     scalaMap.foreach{case (k,v) => ks += k * 3}
     scalaMap.foreach{case (k,v) => vs += v * 3}
     scalaMap.foreach{case (k,v) => { ks -= k; vs -= 2 * v }}
     scalaMap.foreach{case (k,v) => { ks -= 2 * k; vs -= v }}
-
     (ks, vs)
   }
 
-  // foreach benchmark
-  def foreachJavaMap = {
+  def timeForeachJavaMap(reps: Int) = run(reps) {
     val es = javaMap.entrySet
     var ks = 0
     var vs = 0.0
@@ -108,11 +83,10 @@ class MapBenchmarks extends MyBenchmark {
     val it4 = es.iterator; while (it4.hasNext) {
       val e = it4.next(); ks -= 2 * e.getKey; vs -= e.getValue
     }
-
     (ks, vs)
   }
 
-  def foreachDeboxMap = {
+  def timeForeachDeboxMap(reps: Int) = run(reps) {
     var ks = 0
     var vs = 0.0
     deboxMap.foreach((k,v) => ks += k * 3)
@@ -121,49 +95,26 @@ class MapBenchmarks extends MyBenchmark {
     deboxMap.foreach((k,v) => { ks -= 2 * k; vs -= v })
     (ks, vs)
   }
-
-  // def foreachMacroDeboxMap = {
-  //   import debox.Ext._
-  //   var ks = 0
-  //   var vs = 0.0
-  //   deboxMap.foreach_((k, v) => ks += k * 3)
-  //   deboxMap.foreach_((k, v) => vs += v * 3)
-  //   deboxMap.foreach_((k, v) => { ks -= k; vs -= 2 * v })
-  //   deboxMap.foreach_((k, v) => { ks -= 2 * k; vs -= v })
-  //   (ks, vs)
-  // }
-
+  
   // contains benchmark
-  def containsScalaMap:Long = {
-    var i = 0
-    var len = keys.length
+  def timeContainsScalaMap(reps: Int) = run(reps) {
     var t = 0
-    while (i < len) { if (scalaMap.contains(keys(i))) t += 1; i += 1 }
-    i = 0
-    len = keys2.length
-    while (i < len) { if (scalaMap.contains(keys2(i))) t += 1; i += 1 }
+    cfor(0)(_ < keys.length, _ + 1) { i => if (scalaMap.contains(keys(i))) t += 1 }
+    cfor(0)(_ < keys2.length, _ + 1) { i => if (scalaMap.contains(keys2(i))) t += 1 }
     t
   }
 
-  def containsJavaMap:Long = {
-    var i = 0
-    var len = keys.length
+  def timeContainsJavaMap(reps: Int) = run(reps) {
     var t = 0
-    while (i < len) { if (javaMap.containsKey(keys(i))) t += 1; i += 1 }
-    i = 0
-    len = keys2.length
-    while (i < len) { if (javaMap.containsKey(keys2(i))) t += 1; i += 1 }
+    cfor(0)(_ < keys.length, _ + 1) { i => if (javaMap.containsKey(keys(i))) t += 1 }
+    cfor(0)(_ < keys2.length, _ + 1) { i => if (javaMap.containsKey(keys2(i))) t += 1 }
     t
   }
 
-  def containsDeboxMap:Long = {
-    var i = 0
-    var len = keys.length
+  def timeContainsDeboxMap(reps: Int) = run(reps) {
     var t = 0
-    while (i < len) { if (deboxMap.contains(keys(i))) t += 1; i += 1 }
-    i = 0
-    len = keys2.length
-    while (i < len) { if (deboxMap.contains(keys2(i))) t += 1; i += 1 }
+    cfor(0)(_ < keys.length, _ + 1) { i => if (deboxMap.contains(keys(i))) t += 1 }
+    cfor(0)(_ < keys2.length, _ + 1) { i => if (deboxMap.contains(keys2(i))) t += 1 }
     t
   }
 }

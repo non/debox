@@ -11,7 +11,7 @@ import spire.syntax.monoid._
 /**
  * 
  */
-final class Map[@sp(Int, Long, AnyRef) A, @sp(Boolean, Int, Long, Double, AnyRef) B] protected[debox] (ks: Array[A], vs: Array[B], bs: Array[Byte], n: Int, u: Int)(implicit val cta: ClassTag[A], val ctb: ClassTag[B]) {
+final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A], vs: Array[B], bs: Array[Byte], n: Int, u: Int)(implicit val cta: ClassTag[A], val ctb: ClassTag[B]) {
 
   // set internals
   var keys: Array[A] = ks       // slots for keys
@@ -21,9 +21,12 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp(Boolean, Int, Long, Double, AnyRef
   var used: Int = u             // number of used slots (used >= len)
 
   // hashing internals
-  var mask = keys.length - 1             // size - 1, used for hashing
-  var limit = (keys.length * 0.65).toInt // point at which we should grow
+  var mask: Int = keys.length - 1             // size - 1, used for hashing
+  var limit: Int = (keys.length * 0.65).toInt // point at which we should grow
 
+  /**
+   * 
+   */
   override def equals(that: Any): Boolean = that match {
     case that: Map[_, _] =>
       if (size != that.size || cta != that.cta || ctb != that.ctb) return false
@@ -91,8 +94,8 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp(Boolean, Int, Long, Double, AnyRef
     loop(i, i)
   }
 
-  final def remove(key: A) {
-    @inline @tailrec def loop(i: Int, perturbation: Int) {
+  final def remove(key: A): Unit = {
+    @inline @tailrec def loop(i: Int, perturbation: Int): Unit = {
       val j = i & mask
       val status = buckets(j)
       if (status == 3 && keys(j) == key) {
@@ -235,7 +238,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp(Boolean, Int, Long, Double, AnyRef
     result
   }
 
-  final def mapItems[@sp (Int, Long, AnyRef) C: ClassTag, @sp (Boolean, Int, Long, Double, AnyRef) D: ClassTag](f: (A, B) => (C, D)): Map[C, D] = {
+  final def mapItems[@sp (Int, Long, AnyRef) C: ClassTag, @sp D: ClassTag](f: (A, B) => (C, D)): Map[C, D] = {
     val result = Map.empty[C, D]
     foreach((a, b) => result += f(a, b))
     result
@@ -247,7 +250,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp(Boolean, Int, Long, Double, AnyRef
     result
   }
 
-  final def mapValues[@sp (Boolean, Int, Long, Double, AnyRef) C: ClassTag](f: B => C): Map[A, C] = {
+  final def mapValues[@sp C: ClassTag](f: B => C): Map[A, C] = {
     val arr = new Array[C](buckets.length)
     cfor(0)(_ < buckets.length, _ + 1) { i =>
       if (buckets(i) == 3) arr(i) = f(vals(i))
@@ -255,7 +258,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp(Boolean, Int, Long, Double, AnyRef
     new Map[A, C](keys.clone, arr, buckets.clone, len, used)
   }
 
-  final def mapToArray[@sp (Int, Long, Double) C: ClassTag](f: (A, B) => C): Array[C] = {
+  final def mapToArray[@sp C: ClassTag](f: (A, B) => C): Array[C] = {
     val result = new Array[C](len)
     var j = 0
     cfor(0)(_ < buckets.length, _ + 1) { i =>
@@ -267,7 +270,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp(Boolean, Int, Long, Double, AnyRef
     result
   }
 
-  final def flatMap[@sp (Int, Long, AnyRef) C: ClassTag, @sp (Boolean, Int, Long, Double, AnyRef) D: ClassTag](f: (A, B) => Map[C, D]): Map[C, D] = {
+  final def flatMap[@sp (Int, Long, AnyRef) C: ClassTag, @sp D: ClassTag](f: (A, B) => Map[C, D]): Map[C, D] = {
     val result = Map.empty[C, D]
     foreach((k, v) => f(k, v).foreach((c, d) => result(c) = d))
     result
@@ -350,7 +353,7 @@ object Map {
    * 
    * Map.empty[Int, String]
    */
-  def empty[@sp(Int, Long, AnyRef) A: ClassTag, @sp(Boolean, Int, Long, Double, AnyRef) B: ClassTag]: Map[A, B] =
+  def empty[@sp(Int, Long, AnyRef) A: ClassTag, @sp B: ClassTag]: Map[A, B] =
     new Map(new Array[A](8), new Array[B](8), new Array[Byte](8), 0, 0)
 
   /**
@@ -362,7 +365,7 @@ object Map {
    * 
    * Map.ofSize[Int, String](100)
    */
-  def ofSize[@sp(Int, Long, AnyRef) A: ClassTag, @sp(Boolean, Int, Long, Double, AnyRef) B: ClassTag](n: Int): Map[A, B] = {
+  def ofSize[@sp(Int, Long, AnyRef) A: ClassTag, @sp B: ClassTag](n: Int): Map[A, B] = {
     val sz = Util.nextPowerOfTwo(n) match {
       case n if n < 0 => throw DeboxOverflowError(n)
       case 0 => 8
@@ -376,7 +379,7 @@ object Map {
    * 
    * Map(1 -> "cat", 2 -> "dog", 3 -> "fish")
    */
-  def apply[@sp(Int, Long, AnyRef) A: ClassTag, @sp(Boolean, Int, Long, Double, AnyRef) B: ClassTag](pairs: (A, B)*): Map[A, B] =
+  def apply[@sp(Int, Long, AnyRef) A: ClassTag, @sp B: ClassTag](pairs: (A, B)*): Map[A, B] =
     fromIterable(pairs)
 
   /**
@@ -384,7 +387,7 @@ object Map {
    * 
    * Map(Array(1,2,3), Array("cat", "dog", "fish"))
    */
-  def fromArrays[@sp(Int, Long, AnyRef) A: ClassTag, @sp(Boolean, Int, Long, Double, AnyRef) B: ClassTag](ks: Array[A], vs: Array[B]): Map[A, B] = {
+  def fromArrays[@sp(Int, Long, AnyRef) A: ClassTag, @sp B: ClassTag](ks: Array[A], vs: Array[B]): Map[A, B] = {
     if (ks.length != vs.length) throw new InvalidSizes(ks.length, vs.length)
     val map = ofSize[A, B](ks.length)
     cfor(0)(_ < ks.length, _ + 1) { i => map(ks(i)) = vs(i) }
@@ -396,7 +399,7 @@ object Map {
    * 
    * Map(List((1, "cat"), (2, "dog"), (3, "fish")))
    */
-  def fromIterable[@sp(Int, Long, AnyRef) A: ClassTag, @sp(Boolean, Int, Long, Double, AnyRef) B: ClassTag](pairs: Iterable[(A, B)]): Map[A, B] = {
+  def fromIterable[@sp(Int, Long, AnyRef) A: ClassTag, @sp B: ClassTag](pairs: Iterable[(A, B)]): Map[A, B] = {
     val result = empty[A, B]
     // work around compiler bug with foreach here
     val it = pairs.iterator
