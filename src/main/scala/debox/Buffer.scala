@@ -92,7 +92,7 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
       sb.append("Buffer(")
       sb.append(apply(0))
       cfor(1)(_ < limit, _ + 1) { i =>
-        sb.append(",")
+        sb.append(", ")
         sb.append(elems(i))
       }
       sb.append(")")
