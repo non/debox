@@ -2,42 +2,62 @@
 
 ### Overview
 
-Debox is a Scala library providing simple collections which do not box.
+Debox provides specialized mutable collections that don't box.
 
-It is not intended to replace Scala's built-in collections but to complement
-them in cases where performance is more important than genericity. In
-particular, these collection classes do not extend any class, nor any trait
-that is not specialized. This means that they are not instances of
-Traversable, Seq, or any other standard Scala collection interface.
+For performance reasons, Debox's types are not compatible with Scala's
+collections framework (although conversions are possible). You may find that
+Debox's structures provide more reliable performance than Scala's mutable
+collections.
 
-Debox currently targets Scala 2.10 and SBT 0.12.0.
+Debox is available for Scala 2.10, and depends on Spire.
 
-### Types
+### Set up
+
+*Debox is not yet published, so these instructions do not yet apply.*
+
+If you have a Scala 2.10 which uses SBT, add the following to `build.sbt`:
+
+```
+resolvers += "bintray/non" at "http://dl.bintray.com/non/maven"
+
+libraryDependencies += "org.spire-math" %% "debox" % "0.3.0"
+```
+
+### Debox Types
 
 #### Buffer
 
-`debox.buffer.Buffer` is an indexed data structure backed by an array which
+`debox.Buffer` is an indexed data structure backed by an array which
 can be appended to. It corresponds to `collection.mutable.ArrayBuffer`
-but has better performance due to specialization. It can also wrap instances
-of `Array` to provide specialized versions of foreach and map.
+but has better performance due to specialization. It can also wrap
+instances of `Array` to provide specialized versions of foreach and
+map, which are a bit faster.
 
-It comes in two flavors: `debox.buffer.Mutable` and `debox.buffer.Immutable`.
-The former supports mutation via things like `update`, `insert`, and `append`
-(and can automatically grow itself efficiently when needed) whereas the
-immutable version is able to do structural sharing and supports lazily applied
-methods like `reverse`, `map`, and so on.
+Buffers can grow internally. Appending, such as `+=` and `++=`, and
+removing and from the end of the buffer, as `pop` does, will be fast
+operations. Other operations (like adding to the middle of the buffer
+with `insert`) may require internal copying.
 
-#### Buckets
+Example usage:
 
-`debox.Buckets` is a low-level data structure representing an array which can
-tell when particular elements are unset (information provided via implicit
-`debox.Unset` instances). There are two flavors: `debox.MarkedBuckets` uses a
-placeholder value (e.g. `null`) to mark an empty bucket, whereas
-`debox.BitmaskBuckets` uses a separate bitmask array to track which buckets
-are empty.
+```scala
+import debox.Buffer
 
-These classes are designed primarily to be used by other data structures, such
-as `Set` and `Map`
+val buf = Buffer.empty[Int]
+buf += 1
+buf += 1
+buf += 2
+buf.foreach { n => println(n) } // prints 1, 1, 2
+
+val child = buf.copy
+child += 3
+child(0) = 999
+child.toString // Buffer(999, 1, 2, 3)
+
+val buf ++= child
+buf.pop
+buf.sum  // uses spire
+```
 
 #### Set
 
@@ -55,13 +75,6 @@ determine how to hash key values, which it stores in `debox.Buckets` (values
 are stored directly in an `Array`). It uses the same hashing strategy as
 `debox.set.Set`.
 
-#### Vector
-
-`debox.vector.Vector` corresponds to `collection.immutable.Vector`. It uses a
-similar strategy (immutable tree with a branching factor of 32) to try to
-achieve "effectively" constant-time access (given a maximum of 2^31 items, the
-maximum tree depth is 6).
-
 ### Benchmarks
 
 Most of Debox has been developed in tandem with aggressive benchmarking using
@@ -77,26 +90,13 @@ The benchmarks can be run from SBT:
     [info] Set current project to benchmark (in build file:/home/erik/w/debox/)
     > run
 
-### Future Work
+### Disclaimers and Provisos
 
-Current shortcomings of Debox include:
-
-  1. ad-hoc packages and names
-  2. arbitrary-seeming APIs
-  3. (necessary) code duplication
-  4. lack of consistent mutable/immutable support
-  5. missing useful methods
-  6. low test coverage
-
-Probably the most important thing to do is to come up with a principled
-approach to naming these types (given that most of them clash with existing
-Scala types) as well as a good rule of thumb for which methods to include (or
-exclude) for each.
-
-Code duplication can be (potentially) solved via good use of macros and
-reification and type classes would be a useful way to create the appearance of
-an inheritance hierarchy. Both of these approaches should be experiemented
-with.
+Unlike many Java (and Scala?) projects, Debox is not interested in
+hiding its internals beyond what is convenient. To aid inlining, most
+internals are public. This does not mean that users should modify them
+directly--attempting to manually update the structures could produce
+non-deterministic effects.
 
 ### Disclaimers
 
@@ -104,15 +104,25 @@ Debox aims to achieve the best possible performance through use of features
 like specialization, macros, arrays, etc. All other concerns (such as
 visibility, subtyping relationships, type signatures, etc.) are secondary.
 
-The existing API is still quite experimental, and no guarantees about source
-or binary compatibility should be assumed between versions.
+Debox chooses not to provide methods whose implementations are
+guaranteed to be slow. Rather than trying to provide every possibly
+useful method, the goal is to provide core functionality which can be
+implemented efficiently and which plays to the data structure's
+strengths.
 
-Criticisms, suggestions and patches are all welcome, as are benchmarking
-numbers (especially surprsing ones)! 
+It's possible that in the future Debox will use a system of imports to
+optionally add "slow" methods which have been left off the current API.
+Since Debox is not at a 1.0 release yet, the API may change from
+version to version. Debox makes no source- or binary-compatibility
+guarantees.
+
+Criticisms, suggestions and patches are all welcome, as are
+benchmarking results (especially surprsing ones)!
 
 ### Copyright and License
 
 All code is available to you under the MIT license, available at
-http://opensource.org/licenses/mit-license.php and also in the COPYING file.
+http://opensource.org/licenses/mit-license.php and also in the COPYING
+file.
 
-Copyright Erik Osheim, 2012.
+Copyright Erik Osheim, 2012-2014.
