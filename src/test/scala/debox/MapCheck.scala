@@ -12,12 +12,16 @@ import scala.collection.mutable
 import scala.reflect._
 import scala.{specialized => sp}
 
-abstract class MapCheck[A: Arbitrary: ClassTag, B: Arbitrary: ClassTag]
+import spire.algebra.{CMonoid, Rig, Ring}
+import spire.std.any._
+import spire.syntax.monoid._
+
+abstract class MapCheck[A: Arbitrary: ClassTag, B: Arbitrary: ClassTag: CMonoid]
     extends PropSpec with Matchers with GeneratorDrivenPropertyChecks {
 
   import scala.collection.immutable.Set
   import scala.collection.immutable.Map
-  import debox.{Map => DMap}
+  import debox.{Map => DMap, Set => DSet}
 
   def hybridEq[A](d: DMap[A, B], s: mutable.Map[A, B]): Boolean =
     d.size == s.size && s.forall { case (k, v) => d.get(k) == Some(v) }
@@ -130,13 +134,89 @@ abstract class MapCheck[A: Arbitrary: ClassTag, B: Arbitrary: ClassTag]
     }
   }
 
-  property("map") {
-    forAll { kvs: Map[A, B] =>
+  property("mapToSet") {
+    forAll { (kvs: Map[A, B], f: (A, B) => B) =>
+      val m = DMap.fromIterable(kvs)
+      m.mapToSet((a, b) => b) shouldBe DSet.fromArray(m.valuesArray)
+
+      val s2 = kvs.foldLeft(Set.empty[B]) { case (s, (a, b)) =>
+        s + f(a, b)
+      }
+      
+      m.mapToSet(f) shouldBe DSet.fromIterable(s2)
+    }
+  }
+
+  property("mapItemsToMap") {
+    forAll { (kvs: Map[A, B], f: (A, B) => (A, B)) =>
+      val m = DMap.fromIterable(kvs)
+      m.mapToSet((a, b) => b) shouldBe DSet.fromArray(m.valuesArray)
+
+      val kvs2 = kvs.foldLeft(Map.empty[A, B]) { case (m, (a, b)) =>
+        val (aa, bb1) = f(a, b)
+        val bb2 = m.getOrElse(aa, CMonoid[B].id)
+        m.updated(aa, bb1 |+| bb2)
+      }
+      
+      m.mapItemsToMap(f) shouldBe DMap.fromIterable(kvs2)
+    }
+  }
+
+  property("mapKeys") {
+    forAll { (kvs: Map[A, B], f: A => A) =>
+      val m = DMap.fromIterable(kvs)
+      m.mapKeys(a => a) shouldBe m
+
+      val kvs2 = kvs.foldLeft(Map.empty[A, B]) { case (m, (a, b)) =>
+        val aa = f(a)
+        val bb = m.getOrElse(aa, CMonoid[B].id)
+        m.updated(aa, bb |+| b)
+      }
+
+      m.mapKeys(f) shouldBe DMap.fromIterable(kvs2)
+    }
+  }
+
+  property("mapValues") {
+    forAll { (kvs: Map[A, B], f: B => B) =>
       val m = DMap.fromIterable(kvs)
       m.mapValues(b => b) shouldBe m
+
+      m.mapValues(f) shouldBe DMap.fromIterable(kvs.map {
+        case (k, v) => (k, f(v))
+      })
+    }
+  }
+
+  property("forall / exists / findAll") {
+    forAll { (kvs: Map[A, B], f: (A, B) => Boolean) =>
+      val m = DMap.fromIterable(kvs)
+      m.forall(f) shouldBe kvs.forall { case (a, b) => f(a, b) }
+      m.exists(f) shouldBe kvs.exists { case (a, b) => f(a, b) }
+
+      val kvs2 = kvs.filter { case (a, b) => f(a, b) }
+      m.findAll(f) shouldBe DMap.fromIterable(kvs2)
     }
   }
 }
+
+object Impl {
+  implicit val cmint: CMonoid[Int] = Ring[Int].additive
+
+  // argh, why? (i guess CRig doesn't exist)
+  implicit val cmboolean: CMonoid[Boolean] = new CMonoid[Boolean] {
+    def id: Boolean = false
+    def op(lhs: Boolean, rhs: Boolean): Boolean = lhs || rhs
+  }
+
+  // junky but law-abiding
+  implicit val cmstring: CMonoid[String] = new CMonoid[String] {
+    def id: String = ""
+    def op(lhs: String, rhs: String): String = if (lhs > rhs) lhs else rhs
+  }
+}
+
+import Impl._
 
 class IntIntMapCheck extends MapCheck[Int, Int]
 class IntBooleanMapCheck extends MapCheck[Int, Boolean]

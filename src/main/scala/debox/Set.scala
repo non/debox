@@ -37,6 +37,9 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
    * 
    * Comparing Sets with any of Scala's collection types will
    * return false.
+   * 
+   * On average this is an O(n) operation. In some cases a false
+   * result can be returned more quickly.
    */
   override def equals(that: Any): Boolean = that match {
     case that: Set[_] =>
@@ -53,11 +56,15 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
    * By xor'ing all the set's values together, we can be sure that
    * sets with the same contents will have the same hashCode
    * regardless of the order those elements appear.
+   * 
+   * This is an O(n) operation.
    */
   override def hashCode: Int = fold(0xdeadd065)(_ ^ _.##)
 
   /**
    * Return a string representation of the contents of the set.
+   * 
+   * This is an O(n) operation.
    */
   override def toString: String = {
     val sb = new StringBuilder
@@ -106,7 +113,8 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
   /**
    * Return whether the item is found in the Set or not.
    * 
-   * This is an O(1) operation.
+   * On average, this is an O(1) operation; the (unlikely) worst-case
+   * is O(n).
    */
   final def apply(item: A): Boolean = {
     @inline @tailrec def loop(i: Int, perturbation: Int): Boolean = {
@@ -125,7 +133,12 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
   }
 
   /**
-   * Copy this set's contents to a new set.
+   * Make a (shallow) copy of this set.
+   * 
+   * This method creates a copy of the set with the same
+   * structure. However, the actual elements will not be copied.
+   * 
+   * This is an O(n) operation.
    */
   final def copy: Set[A] = new Set(items.clone, buckets.clone, len, used)
 
@@ -136,7 +149,9 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
    * obtained by calling Set.empty[A].
    * 
    * The previous arrays are not retained, and will become available
-   * for garbage collection.
+   * for garbage collection. This method returns a null of type
+   * Unit1[A] to trigger specialization without allocating an actual
+   * instance.
    * 
    * This is an O(1) operation, but may generate a lot of garbage if
    * the set was previously large.
@@ -174,7 +189,8 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
    * Returns whether or not the item was added. If item was already in
    * the set, this method will do nothing and return false.
    * 
-   * This is an amortized O(1) operation.
+   * On average, this is an amortized O(1) operation; the worst-case
+   * is O(n), which will occur when the set must be resized.
    */
   def +=(item: A): Boolean = {
     @inline @tailrec def loop(i: Int, perturbation: Int): Boolean = {
@@ -302,10 +318,11 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
    * This is an O(n) operation, where n is the size of the set.
    */
   def map[@sp(Short, Char, Int, Float, Long, Double, AnyRef) B: ClassTag](f: A => B): Set[B] = {
-    val out = Set.empty[B]
+    val out = Set.ofSize[B](len)
     cfor(0)(_ < buckets.length, _ + 1) { i =>
       if (buckets(i) == 3) out.add(f(items(i)))
     }
+    if (out.size < len / 3) out.compact
     out
   }
 
@@ -331,20 +348,21 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
    * 
    * To preserve hashing access speed, the set's size should never be
    * more than 66% of the underlying array's size. When this size is
-   * reached, the set need to be updated (using this method) to have a
+   * reached, the set needs to be updated (using this method) to have a
    * larger array.
    * 
    * The underlying array's size must always be a multiple of 2, which
    * means this method grows the array's size by 2x (or 4x if the set
    * is very small). This doubling helps amortize the cost of
    * resizing, since as the set gets larger growth will happen less
-   * frequently.
+   * frequently. This method returns a null of type Unit1[A] to
+   * trigger specialization without allocating an actual instance.
    * 
    * Growing is an O(n) operation, where n is the set's size.
    */
   final def grow(): Unit1[A] = {
     val next = buckets.length * (if (buckets.length < 10000) 4 else 2)
-    val set = Set.ofSize[A](next)
+    val set = Set.ofAllocatedSize[A](next)
     cfor(0)(_ < buckets.length, _ + 1) { i =>
       if (buckets(i) == 3) set += items(i)
     }
@@ -358,17 +376,19 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
    * This operation should be used if a set has been shrunk
    * (e.g. through --=) and is not likely to grow again.
    * 
+   * This method will shrink the set to the smallest possible size
+   * that allows it to be <66% full. It returns a null of type
+   * Unit1[A] to trigger specialization without allocating an actual
+   * instance.
+   * 
    * This is an O(n) operation, where n it the set's size.
    */
   final def compact(): Unit1[A] = {
-    val x = len * 2
-    if (x >= 0 && x < buckets.length) {
-      val set = Set.ofSize[A](x)
-      cfor(0)(_ < buckets.length, _ + 1) { i =>
-        if (buckets(i) == 3) set += items(i)
-      }
-      absorb(set)
+    val set = Set.ofSize[A](len)
+    cfor(0)(_ < buckets.length, _ + 1) { i =>
+      if (buckets(i) == 3) set += items(i)
     }
+    absorb(set)
     null
   }
 
@@ -625,14 +645,16 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
    * This is an O(n) operation, where n is the size of the set.
    */
   def partition(p: A => Boolean): (Set[A], Set[A]) = {
-    val no = Set.empty[A]
-    val yes = Set.empty[A]
+    val no = Set.ofSize[A](len / 2)
+    val yes = Set.ofSize[A](len / 2)
     cfor(0)(_ < buckets.length, _ + 1) { i =>
       if (buckets(i) == 3) {
         val a = items(i)
         if (p(a)) yes += a else no += a
       }
     }
+    if (no.size < len / 6) no.compact
+    if (yes.size < len / 6) yes.compact
     (no, yes)
   }
 
@@ -709,7 +731,7 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
    * This is an O(n) operation, where n is the size of the set.
    */
   def toMap[@sp(Boolean, Int, Long, Double) B: ClassTag](f: A => B): Map[A, B] = {
-    val out = Map.ofSize[A, B](size)
+    val out = Map.ofSize[A, B](len)
     cfor(0)(_ < buckets.length, _ + 1) { i =>
       if (buckets(i) == 3) {
         val a = items(i)
@@ -772,7 +794,17 @@ object Set {
    * This method is useful if you know you'll be adding a large number
    * of elements in advance and you want to save a few resizes.
    */
-  def ofSize[@sp A: ClassTag](n: Int) = {
+  def ofSize[@sp A: ClassTag](n: Int) =
+    ofAllocatedSize(n / 2 * 3)
+
+  /**
+   * Allocate an empty Set, with underlying storage of size n.
+   * 
+   * This method is useful if you know exactly how big you want the
+   * underlying array to be. In most cases ofSize() is probably what
+   * you want instead.
+   */
+  private[debox] def ofAllocatedSize[@sp A: ClassTag](n: Int) = {
     val sz = Util.nextPowerOfTwo(n) match {
       case n if n < 0 => throw DeboxOverflowError(n)
       case 0 => 8
