@@ -19,7 +19,7 @@ your `build.sbt` file:
 ```
 resolvers += "bintray/non" at "http://dl.bintray.com/non/maven"
 
-libraryDependencies += "org.spire-math" %% "debox" % "0.4.0"
+libraryDependencies += "org.spire-math" %% "debox" % "0.4.1"
 ```
 
 ### Debox Types
