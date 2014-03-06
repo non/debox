@@ -4,9 +4,8 @@ import scala.annotation.tailrec
 import scala.reflect.ClassTag
 import scala.{specialized => sp}
 
-import spire.algebra.{Monoid, CMonoid}
-import spire.syntax.cfor._
-import spire.syntax.monoid._
+import spire.algebra._
+import spire.syntax.all._
 
 /**
  * Map is a mutable hash map, with open addressing and double hashing.
@@ -368,7 +367,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
    * 
    * This is an O(m) operation, where m is the size of the rhs.
    */
-  final def ++=(rhs: Map[A, B])(implicit ev: CMonoid[B]): Unit = {
+  final def ++=(rhs: Map[A, B])(implicit ev: Monoid[B]): Unit = {
     val z = ev.id
     rhs.foreach { (k, v) => lhs(k) = lhs.getOrElse(k, z) |+| v }
   }
@@ -379,9 +378,22 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
    * 
    * This is an O(m) operation, where m is the size of the rhs.
    */
-  final def ++=(rhs: Iterable[(A, B)])(implicit ev: CMonoid[B]): Unit = {
+  final def ++=(rhs: Iterable[(A, B)])(implicit ev: Monoid[B]): Unit = {
     val z = ev.id
     rhs.foreach { case (k, v) => lhs(k) = lhs.getOrElse(k, z) |+| v }
+  }
+
+  /**
+   * Combine the two maps into a new map, using the provided
+   * CMonoid[B] to merge values for the same key.
+   * 
+   * This is an O(m+n) operation, where m and n are the size of the
+   * maps.
+   */
+  final def ++(rhs: Map[A, B])(implicit ev: Monoid[B]): Map[A, B] = {
+    val out = lhs.copy
+    out ++= rhs
+    out
   }
 
   /**
@@ -907,4 +919,53 @@ object Map {
     while (it.hasNext) { result += it.next }
     result
   }
+
+  /**
+   * Provide an Eq[Map[A, B]] instance.
+   * 
+   * Since Maps are so reliant on equality, and use hash codes
+   * internally, the default equality is used to compare elements.
+   */
+  implicit def eqv[A, B] =
+    new Eq[Map[A, B]] {
+      def eqv(lhs: Map[A, B], rhs: Map[A, B]): Boolean = lhs == rhs
+    }
+
+  /**
+   * Provide a Monoid[Map[A, B]].
+   * 
+   * The maps are combined key-by-key, using |+| to merge values if
+   * necessary.
+   */
+  implicit def monoid[@sp A: ClassTag, @sp B: ClassTag: Monoid] =
+    new Monoid[Map[A, B]] {
+      def id: Map[A, B] = Map.empty[A, B]
+      def op(lhs: Map[A, B], rhs: Map[A, B]): Map[A, B] = lhs ++ rhs
+    }
+
+  /**
+   * Provide an AdditiveMonoid[Map[A, B]].
+   * 
+   * The maps are combined key-by-key, using + to merge values if
+   * necessary.
+   */
+  implicit def additiveMonoid[@sp A: ClassTag, @sp B: ClassTag: AdditiveMonoid] =
+    new AdditiveMonoid[Map[A, B]] {
+      implicit val m: Monoid[B] = implicitly[AdditiveMonoid[B]].additive
+      def zero: Map[A, B] = Map.empty[A, B]
+      def plus(lhs: Map[A, B], rhs: Map[A, B]): Map[A, B] = lhs ++ rhs
+    }
+
+  /**
+   * Provide an MultiplicativeMonoid[Map[A, B]].
+   * 
+   * The maps are combined key-by-key, using * to merge values if
+   * necessary.
+   */
+  implicit def multiplicativeMonoid[@sp A: ClassTag, @sp B: ClassTag: MultiplicativeMonoid] =
+    new MultiplicativeMonoid[Map[A, B]] {
+      implicit val m: Monoid[B] = implicitly[MultiplicativeMonoid[B]].multiplicative
+      def one: Map[A, B] = Map.empty[A, B]
+      def times(lhs: Map[A, B], rhs: Map[A, B]): Map[A, B] = lhs ++ rhs
+    }
 }

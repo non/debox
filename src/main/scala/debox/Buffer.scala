@@ -685,7 +685,7 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) {
   }
 }
 
-object Buffer {
+object Buffer extends LowPriorityBufferImplicits {
 
   /**
    * Allocate an empty Buffer.
@@ -746,7 +746,30 @@ object Buffer {
     unsafe(items.toArray)
 
   /**
-   * Provide a monoid for concatenating buffers.
+   * Provide an Order[Buffer[A]] instance.
+   * 
+   * The empty buffer is considered "less-than" any non-empty buffer,
+   * and non-empty buffers are compared lexicographically. Elemens are
+   * compared using the given Order[A].
+   */
+  implicit def order[@sp A: Order] =
+    new Order[Buffer[A]] {
+      def compare(lhs: Buffer[A], rhs: Buffer[A]): Int = {
+        val (minLength, lastResult) =
+          if (lhs.length < rhs.length) (lhs.length, -1)
+          else if (lhs.length == rhs.length) (lhs.length, 0)
+          else (rhs.length, 1)
+
+        cfor(0)(_ < minLength, _ + 1) { i =>
+          val n = lhs.elems(i) compare rhs.elems(i)
+          if (n != 0) return n
+        }
+        lastResult
+      }
+    }
+
+  /**
+   * Provides a Monoid[Buffer[A]] instance.
    * 
    * The identity value is an empty buffer, and the ++ operator is
    * used to concatenate two buffers without modifying their contents.
@@ -755,5 +778,48 @@ object Buffer {
     new Monoid[Buffer[A]] {
       def id: Buffer[A] = Buffer.empty[A]
       def op(lhs: Buffer[A], rhs: Buffer[A]): Buffer[A] = lhs ++ rhs
+    }
+
+  /**
+   * Alternative Monoid[Buffer[A]] which combines buffers in a
+   * pairwise fashion.
+   */
+  def pairwiseMonoid[@sp A: ClassTag: Monoid] =
+    new Monoid[Buffer[A]] {
+      def id: Buffer[A] = Buffer.empty[A]
+      def op(lhs: Buffer[A], rhs: Buffer[A]): Buffer[A] =
+        if (lhs.length >= rhs.length) {
+          val out = lhs.copy
+          cfor(0)(_ < rhs.elems.length, _ + 1) { i =>
+            out(i) = out(i) |+| rhs.elems(i)
+          }
+          out
+        } else {
+          val out = rhs.copy
+          cfor(0)(_ < lhs.elems.length, _ + 1) { i =>
+            out(i) = lhs.elems(i) |+| out(i)
+          }
+          out
+        }
+    }
+}
+
+trait LowPriorityBufferImplicits {
+
+  /**
+   * Provide an Eq[Buffer[A]] instance.
+   * 
+   * This method uses the given Eq[A] to compare each element
+   * pairwise. Buffers are required to be the same length.
+   */
+  implicit def eqv[@sp A: Eq] =
+    new Eq[Buffer[A]] {
+      def eqv(lhs: Buffer[A], rhs: Buffer[A]): Boolean = {
+        if (lhs.length != rhs.length) return false
+        cfor(0)(_ < lhs.elems.length, _ + 1) { i =>
+          if (lhs.elems(i) =!= rhs.elems(i)) return false
+        }
+        true
+      }
     }
 }
