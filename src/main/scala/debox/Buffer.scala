@@ -751,7 +751,7 @@ object Buffer {
    * The identity value is an empty buffer, and the ++ operator is
    * used to concatenate two buffers without modifying their contents.
    */
-  implicit def monoid[@sp A: ClassTag]: Monoid[Buffer[A]] =
+  implicit def monoid[@sp A: ClassTag] =
     new Monoid[Buffer[A]] {
       def id: Buffer[A] = Buffer.empty[A]
       def op(lhs: Buffer[A], rhs: Buffer[A]): Buffer[A] = lhs ++ rhs

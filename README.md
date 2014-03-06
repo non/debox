@@ -13,15 +13,13 @@ Debox is available for Scala 2.10, and depends on Spire.
 
 ### Set up
 
-*Debox is not yet published, so these instructions do not yet apply.*
-
 If you have a Scala 2.10 which uses SBT, add the following to
 `build.sbt`:
 
 ```
 resolvers += "bintray/non" at "http://dl.bintray.com/non/maven"
 
-libraryDependencies += "org.spire-math" %% "debox" % "0.3.0"
+libraryDependencies += "org.spire-math" %% "debox" % "0.4.0"
 ```
 
 ### Debox Types
