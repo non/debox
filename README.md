@@ -179,17 +179,15 @@ The benchmarks can be run from SBT via `benchmark/run`.
 
 ### Disclaimers and Provisos
 
+Debox aims to achieve the best possible performance through use of features
+like specialization, macros, arrays, etc. All other concerns (such as
+visibility, subtyping relationships, type signatures, etc.) are secondary.
+
 Unlike many Java (and Scala?) projects, Debox is not interested in
 hiding its internals beyond what is convenient. To aid inlining, most
 internals are public. This does not mean that users should modify them
 directly--attempting to manually update the structures could produce
 non-deterministic effects.
-
-### Disclaimers
-
-Debox aims to achieve the best possible performance through use of features
-like specialization, macros, arrays, etc. All other concerns (such as
-visibility, subtyping relationships, type signatures, etc.) are secondary.
 
 Debox chooses not to provide methods whose implementations are
 guaranteed to be slow. Rather than trying to provide every possibly
