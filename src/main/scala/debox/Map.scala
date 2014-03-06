@@ -298,7 +298,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
     @inline @tailrec def loop(i: Int, perturbation: Int): B = {
       val j = i & mask
       val status = buckets(j)
-      if (status == 0) throw new NotFound(key.toString)
+      if (status == 0) throw new KeyNotFoundException(key.toString)
       else if (status == 3 && keys(j) == key) vals(j)
       else loop((i << 2) + i + perturbation + 1, perturbation >> 5)
     }
@@ -885,7 +885,7 @@ object Map {
    * Example: Map(Array(1,2,3), Array("cat", "dog", "fish"))
    */
   def fromArrays[@sp(Int, Long, AnyRef) A: ClassTag, @sp B: ClassTag](ks: Array[A], vs: Array[B]): Map[A, B] = {
-    if (ks.length != vs.length) throw new InvalidSizes(ks.length, vs.length)
+    if (ks.length != vs.length) throw new IllegalArgumentException("ks.length != vs.length")
     val map = ofSize[A, B](ks.length)
     cfor(0)(_ < ks.length, _ + 1) { i => map(ks(i)) = vs(i) }
     map

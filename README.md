@@ -5,9 +5,9 @@
 Debox provides specialized mutable collections that don't box.
 
 For performance reasons, Debox's types are not compatible with Scala's
-collections framework (although conversions are possible). You may find that
-Debox's structures provide more reliable performance than Scala's mutable
-collections.
+collections framework (although conversions are possible). You may find
+that Debox's structures provide more reliable performance than Scala's
+mutable collections.
 
 Debox is available for Scala 2.10, and depends on Spire.
 
@@ -15,7 +15,8 @@ Debox is available for Scala 2.10, and depends on Spire.
 
 *Debox is not yet published, so these instructions do not yet apply.*
 
-If you have a Scala 2.10 which uses SBT, add the following to `build.sbt`:
+If you have a Scala 2.10 which uses SBT, add the following to
+`build.sbt`:
 
 ```
 resolvers += "bintray/non" at "http://dl.bintray.com/non/maven"
@@ -37,6 +38,10 @@ Buffers can grow internally. Appending, such as `+=` and `++=`, and
 removing and from the end of the buffer, as `pop` does, will be fast
 operations. Other operations (like adding to the middle of the buffer
 with `insert`) may require internal copying.
+
+Large buffers which have most of their elements removed will still
+maintain a large underlying array. Use `compact` to reclaim unnecessary
+memory in these situations.
 
 Example usage:
 
@@ -61,34 +66,118 @@ buf.sum  // uses spire
 
 #### Set
 
-`debox.set.Set` corresponds to `collection.mutable.Set` (there is not
-currently an immutable version). It uses implicit `debox.Hash` instances to
-determine how to hash items, and uses `debox.Buckets` to store the members.
-The hashing is done via an open addressing scheme which is similar to the one
-used by Python.
+`debox.Set` corresponds to `collection.mutable.Set`, but without
+boxing. The hashing is done via an open addressing scheme with
+re-hashing, which is derived from the strategy used by Python. See
+*Hashing Strategy* for a more complete description.
+
+Sets are required to maintain extra space to ensure fast average lookup
+times. Sets will tend to use 33-66% of the underlying storage.
+
+Large sets which have most of their elements removed will still
+maintain a large underlying array. Use `compact` to relcaim unnecessary
+memory in these situations.
+
+Example usage:
+
+```scala
+import debox.Set
+
+val set = Set.empty[Int]
+set += 1
+set += 1
+set += 2
+set(0) // false
+set(1) // true
+
+val child = buf.copy
+child += 3
+child += 999
+child.size == 4 // true
+
+val other = Set(2, 3, 4)
+set &= other
+set(1) // false
+set(2) // true
+set.size == 1 // true
+```
 
 #### Map
 
-`debox.map.Map` corresponds to `collection.mutable.Map` (there is not
-currently an immutable version). Like `debox.set.Set`, it uses `debox.Hash` to
-determine how to hash key values, which it stores in `debox.Buckets` (values
-are stored directly in an `Array`). It uses the same hashing strategy as
-`debox.set.Set`.
+`debox.Map` corresponds to `collection.mutable.Map`, but without
+boxing. As with `debox.Set` the hashing is done via an open addressing
+scheme with re-hashing, which is derived from the strategy used by
+Python. See *Hashing Strategy* for a more complete description.
+
+Maps are required to maintain extra space to ensure fast average lookup
+times. Maps will tend to use 33-66% of the underlying storage.
+
+Large maps which have most of their elements removed will still
+maintain a large underlying array. Use `compact` to relcaim unnecessary
+memory in these situations.
+
+Unlike Scala Maps (which store a key and value together as a `Tuple2`),
+Debox stores keys and values in separate arrays. This makes iterating
+over keys or values separately faster, but means that operations which
+treat a map as a sequence of tuples are slow and/or not supported.
+
+Example usage:
+
+```scala
+import debox.Map
+
+val m = Map.empty[String, Int]
+m("boris") = 1887
+m("bela") = 1880
+m("bela") = 1882
+m.size // 2
+
+m.contains("bela")   // true
+m.contains("donald") // false
+m.contains(12345)    // compile-time error!
+
+m.get("bela") // Some(1882)
+m.get("donald") // None
+
+m("boris")  // 1887
+m("bela")   // 1882
+m("donald") // debox.KeyNotFoundException
+
+m ++= Map("christopher" -> 1922, "vincent" -> 1911)
+m.keysSet // Set(christopher, vincent, bela, boris), order is arbitrary
+
+val b = m.mapValues(year => "born in %d" format year)
+b // Map(boris -> born in 1887, bela -> born in 1882, ...)
+```
+
+### Hashing Strategy
+
+The hashing used in `Set` and `Map` works as follows:
+
+1. Get the item's hashcode (retrieved by the `##` operator) as `i`.
+2. Mask this by the underlying array's max index to get `j`.
+3a. If slot `j` is free, use it and return.
+3b. Else, re-hash `i` and repeat.
+
+The re-hashing strategy uses `perturbation` (initialized to the
+original hashcode) as well as the current `i` value. The transition can
+be expressed as:
+
+```scala
+i = (i << 2) + i + perturbation + 1
+perturbation >>= 5
+```
+
+For a much more detailed treatment, you can read the comments on
+CPython's `dictobject.c`
+[here](http://hg.python.org/cpython/file/56c346e9ae4d/Objects/dictobject.c#l106).
 
 ### Benchmarks
 
-Most of Debox has been developed in tandem with aggressive benchmarking using
-Caliper and other tools.
+Most of Debox has been developed in tandem with aggressive benchmarking
+using Caliper and other tools.
 
-The benchmarks can be run from SBT:
-
-    erik@hex ~/w/debox $ sbt
-    [info] Loading project definition from /home/erik/w/debox/project
-    [info] Set current project to debox (in build file:/home/erik/w/debox/)
-    [info] Set current project to debox (in build file:/home/erik/w/debox/)
-    > project benchmark
-    [info] Set current project to benchmark (in build file:/home/erik/w/debox/)
-    > run
+The benchmarks can be run from SBT via `benchmark/run`.
 
 ### Disclaimers and Provisos
 
