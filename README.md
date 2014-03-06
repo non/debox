@@ -9,12 +9,12 @@ collections framework (although conversions are possible). You may find
 that Debox's structures provide more reliable performance than Scala's
 mutable collections.
 
-Debox is available for Scala 2.10, and depends on Spire.
+Debox is available for Scala 2.10.
 
 ### Set up
 
-If you have a Scala 2.10 which uses SBT, add the following to
-`build.sbt`:
+If you have a project using Scala 2.10 and SBT, add the following to
+your `build.sbt` file:
 
 ```
 resolvers += "bintray/non" at "http://dl.bintray.com/non/maven"
