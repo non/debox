@@ -154,8 +154,8 @@ The hashing used in `Set` and `Map` works as follows:
 
 1. Get the item's hashcode (retrieved by the `##` operator) as `i`.
 2. Mask this by the underlying array's max index to get `j`.
-3a. If slot `j` is free, use it and return.
-3b. Else, re-hash `i` and repeat.
+  1. If slot `j` is free, use it and return.
+  2. Else, re-hash `i` and repeat.
 
 The re-hashing strategy uses `perturbation` (initialized to the
 original hashcode) as well as the current `i` value. The transition can
