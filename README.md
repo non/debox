@@ -9,7 +9,7 @@ collections framework (although conversions are possible). You may find
 that Debox's structures provide more reliable performance than Scala's
 mutable collections.
 
-Debox is available for Scala 2.10.
+Debox is available for Scala 2.10 and 2.11.
 
 ### Set up
 
@@ -19,7 +19,7 @@ your `build.sbt` file:
 ```
 resolvers += "bintray/non" at "http://dl.bintray.com/non/maven"
 
-libraryDependencies += "org.spire-math" %% "debox" % "0.4.1"
+libraryDependencies += "org.spire-math" %% "debox" % "0.5.0"
 ```
 
 ### Debox Types

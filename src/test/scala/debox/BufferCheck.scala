@@ -133,16 +133,16 @@ abstract class BufferCheck[A: Arbitrary: ClassTag: Order]
   }
 
   property("random append and pop") {
-    forAll { (steps: List[Option[A]]) =>
+    forAll { (steps: List[(A, Boolean)]) =>
       val buf = Buffer.empty[A]
       val control = mutable.ArrayBuffer.empty[A]
       var lvl: Int = 0
       steps.foreach {
-        case Some(x) =>
+        case (x, true) =>
           buf += x
           control += x
           lvl += 1
-        case None =>
+        case (_, false) =>
           if (lvl > 0) {
             buf.pop
             control.remove(control.length - 1)

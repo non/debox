@@ -112,12 +112,12 @@ abstract class MapCheck[A: Arbitrary: ClassTag, B: Arbitrary: ClassTag: CMonoid]
   }
 
   property("random += and -=") {
-    forAll { (pairs: List[(A, Option[B])]) =>
+    forAll { (pairs: List[(A, B, Boolean)]) =>
       val map = DMap.empty[A, B]
       val control = mutable.Map.empty[A, B]
       pairs.foreach {
-        case (a, Some(b)) => map(a) = b; control(a) = b
-        case (a, None) => map.remove(a); control -= a
+        case (a, b, true) => map(a) = b; control(a) = b
+        case (a, _, false) => map.remove(a); control -= a
       }
       hybridEq(map, control) shouldBe true
     }

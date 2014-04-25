@@ -5,9 +5,11 @@ object MyBuild extends Build {
   override lazy val settings = super.settings ++ Seq(
     name := "debox",
     organization := "org.spire-math",
-    version := "0.5.0-SNAPSHOT",
+    version := "0.5.0",
 
-    scalaVersion := "2.10.3",
+    scalaVersion := "2.10.4",
+
+    crossScalaVersions := Seq("2.10.4", "2.11.0"),
 
     conflictWarning in ThisBuild := ConflictWarning.disable,
 
@@ -22,15 +24,28 @@ object MyBuild extends Build {
 
     resolvers += Resolver.sonatypeRepo("releases"),
 
-    addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.0-M3" cross CrossVersion.full),
+    addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.0" cross CrossVersion.full),
 
     libraryDependencies ++= Seq(
-      "org.spire-math" %% "spire" % "0.7.3",
-      "org.scala-lang" % "scala-reflect" % "2.10.3" % "provided",
-      "org.scalamacros" % "quasiquotes_2.10.3" % "2.0.0-M3" % "provided",
-      "org.scalatest" %% "scalatest" % "2.0" % "test",
-      "org.scalacheck" %% "scalacheck" % "1.10.1" % "test"
-    )
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
+      "org.spire-math" %% "spire" % "0.7.4",
+      "org.scalatest" %% "scalatest" % "2.1.3" % "test",
+      "org.scalacheck" %% "scalacheck" % "1.11.3" % "test"
+    ),
+
+    libraryDependencies := {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        // if scala 2.11+ is used, quasiquotes are merged into scala-reflect
+        case Some((2, scalaMajor)) if scalaMajor >= 11 =>
+          libraryDependencies.value
+
+        // in Scala 2.10, quasiquotes are provided by macro-paradise
+        case Some((2, 10)) =>
+          libraryDependencies.value ++ Seq(
+            compilerPlugin("org.scalamacros" % "paradise" % "2.0.0" cross CrossVersion.full),
+            "org.scalamacros" %% "quasiquotes" % "2.0.0")
+      }
+    }
   )
 
   lazy val root = Project("debox", file("."))
