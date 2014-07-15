@@ -19,7 +19,7 @@ your `build.sbt` file:
 ```
 resolvers += "bintray/non" at "http://dl.bintray.com/non/maven"
 
-libraryDependencies += "org.spire-math" %% "debox" % "0.5.0"
+libraryDependencies += "org.spire-math" %% "debox" % "0.6.0"
 ```
 
 ### Debox Types
@@ -73,7 +73,7 @@ Sets are required to maintain extra space to ensure fast average lookup
 times. Sets will tend to use 33-66% of the underlying storage.
 
 Large sets which have most of their elements removed will still
-maintain a large underlying array. Use `compact` to relcaim unnecessary
+maintain a large underlying array. Use `compact` to reclaim unnecessary
 memory in these situations.
 
 Example usage:
@@ -111,13 +111,13 @@ Maps are required to maintain extra space to ensure fast average lookup
 times. Maps will tend to use 33-66% of the underlying storage.
 
 Large maps which have most of their elements removed will still
-maintain a large underlying array. Use `compact` to relcaim unnecessary
+maintain a large underlying array. Use `compact` to reclaim unnecessary
 memory in these situations.
 
 Unlike Scala Maps (which store a key and value together as a `Tuple2`),
 Debox stores keys and values in separate arrays. This makes iterating
 over keys or values separately faster, but means that operations which
-treat a map as a sequence of tuples are slow and/or not supported.
+treat a map as a sequence of tuples are slower and/or not supported.
 
 Example usage:
 
@@ -202,7 +202,7 @@ version to version. Debox makes no source- or binary-compatibility
 guarantees.
 
 Criticisms, suggestions and patches are all welcome, as are
-benchmarking results (especially surprsing ones)!
+benchmarking results (especially surprising ones)!
 
 ### Copyright and License
 

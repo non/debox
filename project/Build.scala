@@ -5,11 +5,11 @@ object MyBuild extends Build {
   override lazy val settings = super.settings ++ Seq(
     name := "debox",
     organization := "org.spire-math",
-    version := "0.5.0",
+    version := "0.6.0",
 
     scalaVersion := "2.10.4",
 
-    crossScalaVersions := Seq("2.10.4", "2.11.0"),
+    crossScalaVersions := Seq("2.10.4", "2.11.1"),
 
     conflictWarning in ThisBuild := ConflictWarning.disable,
 

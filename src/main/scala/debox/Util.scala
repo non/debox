@@ -42,7 +42,7 @@ object Util {
    *
    * "As seen on scala-internals!"
    */
-  def array[A](as: A*) = macro arrayMacro[A]
+  def array[A](as: A*): Array[A] = macro arrayMacro[A]
 
   /**
    * Takes in something like:
