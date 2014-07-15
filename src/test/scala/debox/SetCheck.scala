@@ -156,7 +156,22 @@ abstract class SetCheck[A: Arbitrary: ClassTag: Order]
     forAll { (xs: Set[A]) =>
       val a = DSet.fromIterable(xs)
       val b = DSet.empty[A]
-      a.foreach(b += _)
+      a.foreach { x =>
+        b(x) shouldBe false
+        b += x
+      }
+      a shouldBe b
+    }
+  }
+
+  property("iterator") {
+    forAll { (xs: Set[A]) =>
+      val a = DSet.fromIterable(xs)
+      val b = DSet.empty[A]
+      a.iterator.foreach { x =>
+        b(x) shouldBe false
+        b += x
+      }
       a shouldBe b
     }
   }

@@ -837,6 +837,35 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
     }
     loop(0, buckets.length - 1)
   }
+
+  /**
+   * Return an iterator over this map's contents.
+   * 
+   * This method does not do any copying or locking. Thus, if the map
+   * is modified while the iterator is "live" the results will be
+   * undefined and probably bad. Also, since maps are not ordered,
+   * there is no guarantee elements will be returned in a particular
+   * order.
+   * 
+   * Use this.copy.iterator to get a "clean" iterator if needed.
+   * 
+   * Creating the iterator is an O(1) operation.
+   */
+  def iterator: Iterator[(A, B)] = {
+    var i = 0
+    while (i < buckets.length && buckets(i) != 3) i += 1
+    new Iterator[(A, B)] {
+      var index = i
+      def hasNext: Boolean = index < buckets.length
+      def next: (A, B) = {
+        val key = keys(index)
+        val value = vals(index)
+        index += 1
+        while (index < buckets.length && buckets(index) != 3) index += 1
+        (key, value)
+      }
+    }
+  }
 }
 
 object Map {

@@ -659,7 +659,7 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
   }
 
   /**
-   * Return an iterator over this buffer's contents.
+   * Return an iterator over this set's contents.
    * 
    * This method does not do any copying or locking. Thus, if the set
    * is modified while the iterator is "live" the results will be

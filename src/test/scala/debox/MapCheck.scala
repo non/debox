@@ -128,6 +128,19 @@ abstract class MapCheck[A: Arbitrary: ClassTag, B: Arbitrary: ClassTag: CMonoid]
       val map1 = DMap.fromIterable(kvs)
       val map2 = DMap.empty[A, B]
       map1.foreach { (k, v) =>
+        map2.contains(k) shouldBe false
+        map2(k) = v
+      }
+      map1 shouldBe map2
+    }
+  }
+
+  property("iterator") {
+    forAll { (kvs: Map[A, B]) =>
+      val map1 = DMap.fromIterable(kvs)
+      val map2 = DMap.empty[A, B]
+      map1.iterator.foreach { case (k, v) =>
+        map2.contains(k) shouldBe false
         map2(k) = v
       }
       map1 shouldBe map2
