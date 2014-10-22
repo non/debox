@@ -730,8 +730,8 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
    * 
    * This is an O(n) operation, where n is the size of the set.
    */
-  def toMap[@sp(Boolean, Int, Long, Double) B: ClassTag](f: A => B): Map[A, B] = {
-    val out = Map.ofSize[A, B](len)
+  def toMap[@sp(Boolean, Int, Long, Double) B: ClassTag](f: A => B): spall.Map[A, B] = {
+    val out = spall.Map.ofSize[A, B](len)
     cfor(0)(_ < buckets.length, _ + 1) { i =>
       if (buckets(i) == 3) {
         val a = items(i)

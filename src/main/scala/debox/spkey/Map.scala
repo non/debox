@@ -1,9 +1,10 @@
 package debox
+package spkey
 
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
 import scala.{specialized => spA}
-import scala.{specialized => spB}
+import debox.{dummysp => spB}
 import scala.{specialized => spC}
 
 import spire.algebra._

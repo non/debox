@@ -82,3 +82,11 @@ object Util {
     if (x == n) n else x * 2
   }
 }
+
+import Specializable._
+
+/** Dummy specialization annotation. Used to disable specialization by changing imports in Map. */
+
+class dummysp extends scala.annotation.StaticAnnotation {
+  def this(dummy: Any*) = this()
+}
