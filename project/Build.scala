@@ -5,11 +5,11 @@ object MyBuild extends Build {
   override lazy val settings = super.settings ++ Seq(
     name := "debox",
     organization := "org.spire-math",
-    version := "0.6.0",
+    version := "0.7.0",
 
-    scalaVersion := "2.10.4",
+    scalaVersion := "2.11.4",
 
-    crossScalaVersions := Seq("2.10.4", "2.11.1"),
+    crossScalaVersions := Seq("2.10.4", "2.11.4"),
 
     conflictWarning in ThisBuild := ConflictWarning.disable,
 
@@ -24,13 +24,13 @@ object MyBuild extends Build {
 
     resolvers += Resolver.sonatypeRepo("releases"),
 
-    addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.0" cross CrossVersion.full),
+    addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full),
 
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
-      "org.spire-math" %% "spire" % "0.7.4",
-      "org.scalatest" %% "scalatest" % "2.1.3" % "test",
-      "org.scalacheck" %% "scalacheck" % "1.11.3" % "test"
+      "org.spire-math" %% "spire" % "0.9.0",
+      "org.scalatest" %% "scalatest" % "2.2.1" % "test",
+      "org.scalacheck" %% "scalacheck" % "1.12.1" % "test"
     ),
 
     libraryDependencies := {
@@ -42,8 +42,8 @@ object MyBuild extends Build {
         // in Scala 2.10, quasiquotes are provided by macro-paradise
         case Some((2, 10)) =>
           libraryDependencies.value ++ Seq(
-            compilerPlugin("org.scalamacros" % "paradise" % "2.0.0" cross CrossVersion.full),
-            "org.scalamacros" %% "quasiquotes" % "2.0.0")
+            compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full),
+            "org.scalamacros" %% "quasiquotes" % "2.0.1")
       }
     }
   )
