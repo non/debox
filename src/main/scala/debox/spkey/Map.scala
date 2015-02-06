@@ -1,8 +1,11 @@
 package debox
+package spkey
 
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
-import scala.{specialized => sp}
+import scala.{specialized => spA}
+import debox.{dummysp => spB}
+import scala.{specialized => spC}
 
 import spire.algebra._
 import spire.syntax.all._
@@ -42,7 +45,7 @@ import spire.syntax.all._
  * This means that the Debox Map API has some real differences
  * compared to Scala's API, so please check the methods you are using.
  */
-final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A], vs: Array[B], bs: Array[Byte], n: Int, u: Int)(implicit val cta: ClassTag[A], val ctb: ClassTag[B]) { lhs =>
+final class Map[@spA(Int, Long, AnyRef) A, @spB B] protected[debox] (ks: Array[A], vs: Array[B], bs: Array[Byte], n: Int, u: Int)(implicit val cta: ClassTag[A], val ctb: ClassTag[B]) { lhs =>
 
   // map internals
   var keys: Array[A] = ks       // slots for keys
@@ -498,7 +501,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
    * On average, this is an O(n) operation, where n is the size of the
    * map.
    */
-  final def mapToArray[@sp C: ClassTag](f: (A, B) => C): Array[C] = {
+  final def mapToArray[@spC C: ClassTag](f: (A, B) => C): Array[C] = {
     val result = new Array[C](len)
     var j = 0
     cfor(0)(_ < buckets.length, _ + 1) { i =>
@@ -523,7 +526,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
    * On average, this is an O(n) operation, where n is the size of the
    * map.
    */
-  final def mapToSet[@sp C: ClassTag](f: (A, B) => C): Set[C] = {
+  final def mapToSet[@spC C: ClassTag](f: (A, B) => C): Set[C] = {
     val result = Set.ofSize[C](len)
     cfor(0)(_ < buckets.length, _ + 1) { i =>
       if (buckets(i) == 3) result += f(keys(i), vals(i))
@@ -547,7 +550,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
    * On average, this is an O(n) operation, where n is the size of the
    * map.
    */
-  final def mapItemsToMapUnsafe[@sp (Int, Long, AnyRef) C: ClassTag, @sp D: ClassTag](f: (A, B) => (C, D)): Map[C, D] = {
+  final def mapItemsToMapUnsafe[@spA (Int, Long, AnyRef) C: ClassTag, @spB D: ClassTag](f: (A, B) => (C, D)): Map[C, D] = {
     val result = Map.ofSize[C, D](len)
     foreach((a, b) => result += f(a, b))
     result.compact
@@ -570,7 +573,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
    * On average, this is an O(n) operation, where n is the size of the
    * map.
    */
-  final def mapItemsToMap[@sp (Int, Long, AnyRef) C: ClassTag, @sp D: ClassTag](f: (A, B) => (C, D))(implicit ev: CMonoid[D]): Map[C, D] = {
+  final def mapItemsToMap[@spA (Int, Long, AnyRef) C: ClassTag, @spB D: ClassTag](f: (A, B) => (C, D))(implicit ev: CMonoid[D]): Map[C, D] = {
     val result = Map.ofSize[C, D](len)
     val z = ev.id
     foreach { (a, b) =>
@@ -596,7 +599,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
    * On average, this is an O(n) operation, where n is the size of the
    * map.
    */
-  final def mapKeysUnsafe[@sp (Int, Long, AnyRef) C: ClassTag](f: A => C): Map[C, B] = {
+  final def mapKeysUnsafe[@spA (Int, Long, AnyRef) C: ClassTag](f: A => C): Map[C, B] = {
     val result = Map.ofSize[C, B](len)
     foreach((a, b) => result(f(a)) = b)
     result.compact
@@ -620,7 +623,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
    * On average, this is an O(n) operation, where n is the size of the
    * map.
    */
-  final def mapKeys[@sp (Int, Long, AnyRef) C: ClassTag](f: A => C)(implicit ev: CMonoid[B]): Map[C, B] = {
+  final def mapKeys[@spA (Int, Long, AnyRef) C: ClassTag](f: A => C)(implicit ev: CMonoid[B]): Map[C, B] = {
     val result = Map.ofSize[C, B](len)
     val z = ev.id
     foreach { (a, b) =>
@@ -645,7 +648,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
    * On average, this is an O(n) operation, where n is the size of the
    * map.
    */
-  final def mapValues[@sp C: ClassTag](f: B => C): Map[A, C] = {
+  final def mapValues[@spB C: ClassTag](f: B => C): Map[A, C] = {
     val arr = new Array[C](buckets.length)
     cfor(0)(_ < buckets.length, _ + 1) { i =>
       if (buckets(i) == 3) arr(i) = f(vals(i))
@@ -875,7 +878,7 @@ object Map {
    * 
    * Example: Map.empty[Int, String]
    */
-  def empty[@sp(Int, Long, AnyRef) A: ClassTag, @sp B: ClassTag]: Map[A, B] =
+  def empty[@spA(Int, Long, AnyRef) A: ClassTag, @spB B: ClassTag]: Map[A, B] =
     new Map(new Array[A](8), new Array[B](8), new Array[Byte](8), 0, 0)
 
   /**
@@ -889,7 +892,7 @@ object Map {
    * 
    * Example: Map.ofSize[Int, String](100).
    */
-  def ofSize[@sp(Int, Long, AnyRef) A: ClassTag, @sp B: ClassTag](n: Int): Map[A, B] =
+  def ofSize[@spA(Int, Long, AnyRef) A: ClassTag, @spB B: ClassTag](n: Int): Map[A, B] =
     ofAllocatedSize[A, B](n / 2 * 3)
 
   /**
@@ -899,7 +902,7 @@ object Map {
    * underlying array to be. In most cases ofSize() is probably what
    * you want instead.
    */
-  private[debox] def ofAllocatedSize[@sp(Int, Long, AnyRef) A: ClassTag, @sp B: ClassTag](n: Int) = {
+  private[debox] def ofAllocatedSize[@spA(Int, Long, AnyRef) A: ClassTag, @spB B: ClassTag](n: Int) = {
     val sz = Util.nextPowerOfTwo(n) match {
       case n if n < 0 => throw DeboxOverflowError(n)
       case 0 => 8
@@ -917,7 +920,7 @@ object Map {
    * 
    * Example: Map(1 -> "cat", 2 -> "dog", 3 -> "fish")
    */
-  def apply[@sp(Int, Long, AnyRef) A: ClassTag, @sp B: ClassTag](pairs: (A, B)*): Map[A, B] =
+  def apply[@spA(Int, Long, AnyRef) A: ClassTag, @spB B: ClassTag](pairs: (A, B)*): Map[A, B] =
     fromIterable(pairs)
 
   /**
@@ -925,7 +928,7 @@ object Map {
    * 
    * Example: Map(Array(1,2,3), Array("cat", "dog", "fish"))
    */
-  def fromArrays[@sp(Int, Long, AnyRef) A: ClassTag, @sp B: ClassTag](ks: Array[A], vs: Array[B]): Map[A, B] = {
+  def fromArrays[@spA(Int, Long, AnyRef) A: ClassTag, @spB B: ClassTag](ks: Array[A], vs: Array[B]): Map[A, B] = {
     if (ks.length != vs.length) throw new IllegalArgumentException("ks.length != vs.length")
     val map = ofSize[A, B](ks.length)
     cfor(0)(_ < ks.length, _ + 1) { i => map(ks(i)) = vs(i) }
@@ -941,7 +944,7 @@ object Map {
    * 
    * Example: Map.fromIterable(List((1, "cat"), (2, "dog"), (3, "fish")))
    */
-  def fromIterable[@sp(Int, Long, AnyRef) A: ClassTag, @sp B: ClassTag](pairs: Iterable[(A, B)]): Map[A, B] = {
+  def fromIterable[@spA(Int, Long, AnyRef) A: ClassTag, @spB B: ClassTag](pairs: Iterable[(A, B)]): Map[A, B] = {
     val result = empty[A, B]
     // work around compiler bug with foreach here
     val it = pairs.iterator
@@ -966,7 +969,7 @@ object Map {
    * The maps are combined key-by-key, using |+| to merge values if
    * necessary.
    */
-  implicit def monoid[@sp A: ClassTag, @sp B: ClassTag: Monoid] =
+  implicit def monoid[@spA(Int, Long, AnyRef) A: ClassTag, @spB B: ClassTag: Monoid] =
     new Monoid[Map[A, B]] {
       def id: Map[A, B] = Map.empty[A, B]
       def op(lhs: Map[A, B], rhs: Map[A, B]): Map[A, B] = lhs ++ rhs
@@ -978,7 +981,7 @@ object Map {
    * The maps are combined key-by-key, using + to merge values if
    * necessary.
    */
-  implicit def additiveMonoid[@sp A: ClassTag, @sp B: ClassTag: AdditiveMonoid] =
+  implicit def additiveMonoid[@spA(Int, Long, AnyRef) A: ClassTag, @spB B: ClassTag: AdditiveMonoid] =
     new AdditiveMonoid[Map[A, B]] {
       implicit val m: Monoid[B] = implicitly[AdditiveMonoid[B]].additive
       def zero: Map[A, B] = Map.empty[A, B]
@@ -991,7 +994,7 @@ object Map {
    * The maps are combined key-by-key, using * to merge values if
    * necessary.
    */
-  implicit def multiplicativeMonoid[@sp A: ClassTag, @sp B: ClassTag: MultiplicativeMonoid] =
+  implicit def multiplicativeMonoid[@spA(Int, Long, AnyRef) A: ClassTag, @spB B: ClassTag: MultiplicativeMonoid] =
     new MultiplicativeMonoid[Map[A, B]] {
       implicit val m: Monoid[B] = implicitly[MultiplicativeMonoid[B]].multiplicative
       def one: Map[A, B] = Map.empty[A, B]
