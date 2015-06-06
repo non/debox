@@ -123,6 +123,26 @@ abstract class MapCheck[A: Arbitrary: ClassTag, B: Arbitrary: ClassTag: CMonoid]
     }
   }
 
+  property("getOrElse/getOrElseUpdate") {
+    forAll { (keys: Set[A], values: (B, B, B)) =>
+      val map = DMap.empty[A, B]
+      val control = mutable.Map.empty[A, B]
+      val (a, b, c) = values
+      keys.foreach {
+        case k =>
+          map.getOrElse(k, c) shouldBe c
+          map.getOrElseUpdate(k, a) shouldBe a
+          map.getOrElse(k, c) shouldBe a
+          map.getOrElseUpdate(k, b) shouldBe a
+          map.getOrElse(k, c) shouldBe a
+
+          control.getOrElseUpdate(k, a)
+          control.getOrElseUpdate(k, b)
+      }
+      hybridEq(map, control) shouldBe true
+    }
+  }
+
   property("foreach") {
     forAll { (kvs: Map[A, B]) =>
       val map1 = DMap.fromIterable(kvs)
