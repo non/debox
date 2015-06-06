@@ -332,6 +332,43 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
   }
 
   /**
+   * Return the key's current value in the map, returning the given
+   * fallback value and updating the key with that value if the key
+   * is not found.
+   * 
+   * Unlike Scala's method, this method is eager in its second
+   * parameters, so it should only be used if the default value is
+   * already available (or a literal, or very cheap).
+   * 
+   * On average, this is an O(1) operation; the (unlikely) worst-case
+   * is O(n).
+   */
+  final def getOrElseUpdate(key: A, fallback: B): B = {
+    @inline @tailrec
+    def loop(i: Int, perturbation: Int, freeBlock: Int): B = {
+      val j = i & mask
+      val status = buckets(j)
+      if (status == 0) {
+        val writeTo = if (freeBlock == -1) j else freeBlock
+        keys(writeTo) = key
+        vals(writeTo) = fallback
+        buckets(writeTo) = 3
+        len += 1
+        used += 1
+        if (used > limit) grow()
+        fallback
+      }
+      else if (status == 2) 
+        loop((i << 2) + i + perturbation + 1, perturbation >> 5, j)
+      else if (status == 3 && keys(j) == key) vals(j)
+      else
+        loop((i << 2) + i + perturbation + 1, perturbation >> 5, freeBlock)
+    }
+    val i = key.## & 0x7fffffff
+    loop(i, i, -1)
+  }
+
+  /**
    * Return the key's current value in the map as an Option, returning
    * None if the key is not found.
    * 
