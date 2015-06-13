@@ -154,29 +154,28 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
    * is O(n), which will happen when the map needs to be resized.
    */
   final def update(key: A, value: B): Unit = {
-    @inline @tailrec def loop(i: Int, perturbation: Int): Unit = {
+    @inline @tailrec
+    def loop(i: Int, perturbation: Int, freeBlock: Int): Unit = {
       val j = i & mask
       val status = buckets(j)
       if (status == 0) {
-        keys(j) = key
-        vals(j) = value
-        buckets(j) = 3
+        val writeTo = if (freeBlock == -1) j else freeBlock
+        keys(writeTo) = key
+        vals(writeTo) = value
+        buckets(writeTo) = 3
         len += 1
         used += 1
         if (used > limit) grow()
-      } else if (status == 2 && !contains(key)) {
-        keys(j) = key
-        vals(j) = value
-        buckets(j) = 3
-        len += 1
+      } else if (status == 2) {
+        loop((i << 2) + i + perturbation + 1, perturbation >> 5, j)
       } else if (keys(j) == key) {
         vals(j) = value
       } else {
-        loop((i << 2) + i + perturbation + 1, perturbation >> 5)
+        loop((i << 2) + i + perturbation + 1, perturbation >> 5, freeBlock)
       }
     }
     val i = key.## & 0x7fffffff
-    loop(i, i)
+    loop(i, i, -1)
   }
 
   /**
