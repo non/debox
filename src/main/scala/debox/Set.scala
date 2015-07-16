@@ -17,7 +17,7 @@ import spire.syntax.all._
  * When the type A is known (or the caller is specialized on A),
  * Set[A] will store the values in an unboxed array.
  */
-final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected[debox](as: Array[A], bs: Array[Byte], n: Int, u: Int)(implicit val ct: ClassTag[A]) { lhs =>
+final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected[debox](as: Array[A], bs: Array[Byte], n: Int, u: Int)(implicit val ct: ClassTag[A]) extends Serializable { lhs =>
 
   // set machinery
   var items: Array[A] = as      // slots for items

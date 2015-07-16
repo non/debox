@@ -42,7 +42,7 @@ import spire.syntax.all._
  * This means that the Debox Map API has some real differences
  * compared to Scala's API, so please check the methods you are using.
  */
-final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A], vs: Array[B], bs: Array[Byte], n: Int, u: Int)(implicit val cta: ClassTag[A], val ctb: ClassTag[B]) { lhs =>
+final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A], vs: Array[B], bs: Array[Byte], n: Int, u: Int)(implicit val cta: ClassTag[A], val ctb: ClassTag[B]) extends Serializable { lhs =>
 
   // map internals
   var keys: Array[A] = ks       // slots for keys

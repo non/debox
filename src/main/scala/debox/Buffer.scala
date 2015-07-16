@@ -43,7 +43,7 @@ import spire.syntax.all._
  * safety or protection against concurrent updates. Modify a Buffer
  * during foreach, map, iterator, etc will produce undefined results.
  */
-final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) { lhs =>
+final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) extends Serializable { lhs =>
 
   var elems: Array[A] = arr
   var len: Int = n
