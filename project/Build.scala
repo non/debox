@@ -7,9 +7,9 @@ object MyBuild extends Build {
     organization := "org.spire-math",
     version := "0.7.0",
 
-    scalaVersion := "2.11.4",
+    scalaVersion := "2.11.7",
 
-    crossScalaVersions := Seq("2.10.4", "2.11.4"),
+    crossScalaVersions := Seq("2.10.5", "2.11.7"),
 
     conflictWarning in ThisBuild := ConflictWarning.disable,
 
