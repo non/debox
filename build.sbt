@@ -1,12 +1,21 @@
-import sbt._
-import sbt.Keys._
+import ReleaseTransformations._
 
 lazy val deboxSettings = Seq(
   organization := "org.spire-math",
-  version := "0.7.2-SNAPSHOT",
   licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
+  homepage := Some(url("http://github.com/non/debox")),
+
   scalaVersion := "2.11.7",
   crossScalaVersions := Seq("2.10.5", "2.11.7"),
+
+  resolvers += Resolver.sonatypeRepo("releases"),
+  libraryDependencies ++= Seq(
+    "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
+    "org.spire-math" %% "spire" % "0.9.0",
+    "org.scalatest" %% "scalatest" % "2.2.1" % "test",
+    "org.scalacheck" %% "scalacheck" % "1.12.1" % "test"
+  ),
+
   scalacOptions ++= Seq(
     "-Xlog-free-terms",
     "-feature",
@@ -15,13 +24,7 @@ lazy val deboxSettings = Seq(
     "-optimize",
     "-unchecked"
   ),
-  resolvers += Resolver.sonatypeRepo("releases"),
-  libraryDependencies ++= Seq(
-    "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
-    "org.spire-math" %% "spire" % "0.9.0",
-    "org.scalatest" %% "scalatest" % "2.2.1" % "test",
-    "org.scalacheck" %% "scalacheck" % "1.12.1" % "test"
-  ),
+
   libraryDependencies := {
     CrossVersion.partialVersion(scalaVersion.value) match {
       // if scala 2.11+ is used, quasiquotes are merged into scala-reflect
@@ -33,7 +36,49 @@ lazy val deboxSettings = Seq(
           compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full),
           "org.scalamacros" %% "quasiquotes" % "2.0.1")
     }
-  })
+  },
+
+  releaseCrossBuild := true,
+  releasePublishArtifactsAction := PgpKeys.publishSigned.value,
+  publishMavenStyle := true,
+  publishArtifact in Test := false,
+  pomIncludeRepository := Function.const(false),
+
+  publishTo <<= (version).apply { v =>
+    val nexus = "https://oss.sonatype.org/"
+    if (v.trim.endsWith("SNAPSHOT"))
+      Some("Snapshots" at nexus + "content/repositories/snapshots")
+    else
+      Some("Releases" at nexus + "service/local/staging/deploy/maven2")
+  },
+
+  pomExtra := (
+    <scm>
+      <url>git@github.com:non/debox.git</url>
+      <connection>scm:git:git@github.com:non/debox.git</connection>
+    </scm>
+    <developers>
+      <developer>
+        <id>d_m</id>
+        <name>Erik Osheim</name>
+        <url>http://github.com/non/</url>
+      </developer>
+    </developers>
+  ),
+
+  releaseProcess := Seq[ReleaseStep](
+    checkSnapshotDependencies,
+    inquireVersions,
+    runClean,
+    runTest,
+    setReleaseVersion,
+    commitReleaseVersion,
+    tagRelease,
+    ReleaseStep(action = Command.process("publishSigned", _)),
+    setNextVersion,
+    commitNextVersion,
+    ReleaseStep(action = Command.process("sonatypeReleaseAll", _)),
+    pushChanges))
 
 lazy val noPublishSettings = Seq(
   publish := (),
