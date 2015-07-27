@@ -19,7 +19,7 @@ following snippet:
 ```
 resolvers += Resolver.sonatypeRepo("releases"),
 
-libraryDependencies += "org.spire-math" %% "debox" % "0.7.2"
+libraryDependencies += "org.spire-math" %% "debox" % "0.7.3"
 ```
 
 ### Debox Types
