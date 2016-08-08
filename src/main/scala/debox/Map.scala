@@ -751,7 +751,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
    */
   final def grow(): Unit2[A, B] = {
     val next = keys.length * (if (keys.length < 10000) 4 else 2)
-    val map = Map.ofSize[A, B](next)
+    val map = Map.ofAllocatedSize[A, B](next)
     cfor(0)(_ < buckets.length, _ + 1) { i =>
       if (buckets(i) == 3) map(keys(i)) = vals(i)
     }
