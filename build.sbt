@@ -5,15 +5,15 @@ lazy val deboxSettings = Seq(
   licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
   homepage := Some(url("http://github.com/non/debox")),
 
-  scalaVersion := "2.11.7",
-  crossScalaVersions := Seq("2.10.5", "2.11.7"),
+  scalaVersion := "2.11.8",
+  crossScalaVersions := Seq("2.10.6", "2.11.8"),
 
   resolvers += Resolver.sonatypeRepo("releases"),
   libraryDependencies ++= Seq(
-    "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
-    "org.spire-math" %% "spire" % "0.9.0",
-    "org.scalatest" %% "scalatest" % "2.2.1" % "test",
-    "org.scalacheck" %% "scalacheck" % "1.12.1" % "test"
+    "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
+    compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
+    "org.scalatest" %% "scalatest" % "3.0.0" % "test",
+    "org.scalacheck" %% "scalacheck" % "1.13.2" % "test"
   ),
 
   scalacOptions ++= Seq(
@@ -24,19 +24,6 @@ lazy val deboxSettings = Seq(
     "-optimize",
     "-unchecked"
   ),
-
-  libraryDependencies := {
-    CrossVersion.partialVersion(scalaVersion.value) match {
-      // if scala 2.11+ is used, quasiquotes are merged into scala-reflect
-      case Some((2, n)) if n >= 11 =>
-        libraryDependencies.value
-      // in Scala 2.10, quasiquotes are provided by macro-paradise
-      case Some((2, 10)) =>
-        libraryDependencies.value ++ Seq(
-          compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full),
-          "org.scalamacros" %% "quasiquotes" % "2.0.1")
-    }
-  },
 
   releaseCrossBuild := true,
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
@@ -86,13 +73,33 @@ lazy val noPublishSettings = Seq(
   publishArtifact := false
 )
 
-lazy val core = project
+lazy val root = project
   .in(file("."))
+  .dependsOn(core, spire, benchmark)
+  .aggregate(core, spire, benchmark)
   .settings(moduleName := "debox")
   .settings(deboxSettings)
+  .settings(noPublishSettings: _*)
 
-lazy val benchmark = project.dependsOn(core)
+lazy val core = project
+  .in(file("core"))
+  .settings(moduleName := "debox-core")
+  .settings(deboxSettings)
+  .settings(libraryDependencies += "org.spire-math" %% "spire-macros" % "0.11.0")
+
+lazy val spire = project
+  .in(file("spire"))
+  .dependsOn(core)
+  .settings(moduleName := "debox-spire")
+  .settings(deboxSettings)
+  .settings(libraryDependencies ++= Seq(
+    "org.spire-math" %% "spire" % "0.11.0",
+    "org.spire-math" %% "spire-laws" % "0.11.0" % "test",
+    "org.typelevel" %% "discipline" % "0.6" % "test"))
+
+lazy val benchmark = project
   .in(file("benchmark"))
+  .dependsOn(core, spire)
   .settings(moduleName := "debox-benchmark")
   .settings(deboxSettings)
   .settings(Seq(

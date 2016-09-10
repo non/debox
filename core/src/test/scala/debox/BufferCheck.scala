@@ -1,25 +1,14 @@
 package debox
 
-import org.scalatest.matchers.ShouldMatchers
 import org.scalatest._
 import prop._
-import org.scalacheck.Arbitrary._
-import org.scalacheck._
-import Gen._
-import Arbitrary.arbitrary
-
-import spire.algebra.Order
-import spire.compat._
-import spire.std.any._
+import org.scalacheck.{Arbitrary, Cogen}
 
 import scala.collection.mutable
-import scala.reflect._
+import scala.reflect.ClassTag
 
-abstract class BufferCheck[A: Arbitrary: ClassTag: Order]
+abstract class BufferCheck[A: Arbitrary: ClassTag: Cogen]
     extends PropSpec with Matchers with GeneratorDrivenPropertyChecks {
-
-  import scala.collection.immutable.Set
-  //import scala.collection.immutable.Vector
 
   def hybridEq[A](d: Buffer[A], s: IndexedSeq[A]): Boolean =
     d.length == s.length && (0 until d.length).forall(i => d(i) == s(i))
@@ -157,11 +146,11 @@ abstract class BufferCheck[A: Arbitrary: ClassTag: Order]
     forAll { (xs: List[A], ys: List[A]) =>
       val buf = Buffer.empty[A]
       val control = mutable.ArrayBuffer.empty[A]
-  
+
       buf ++= xs
       control ++= xs
       hybridEq(buf, control) shouldBe true
-  
+
       buf ++= ys
       control ++= ys
       hybridEq(buf, control) shouldBe true
@@ -177,21 +166,12 @@ abstract class BufferCheck[A: Arbitrary: ClassTag: Order]
       val control = mutable.ArrayBuffer(xs: _*)
       hybridEq(buf1, control) shouldBe true
       hybridEq(buf2, control) shouldBe true
-  
+
       buf1.splice(i, ys.toArray)
       buf2.splice(i, Buffer.fromIterable(ys))
       control.insertAll(i, ys)
       hybridEq(buf1, control) shouldBe true
       hybridEq(buf2, control) shouldBe true
-    }
-  }
-
-  property("sort") {
-    forAll { xs: List[A] =>
-      val a = Buffer.fromIterable(xs)
-      a.sort
-      val b = Buffer.fromIterable(xs.sorted)
-      a shouldBe b
     }
   }
 
@@ -216,6 +196,12 @@ abstract class BufferCheck[A: Arbitrary: ClassTag: Order]
   property("toVector") {
     forAll { xs: List[A] =>
       Buffer.fromIterable(xs).toVector shouldBe xs.toVector
+    }
+  }
+
+  property("map") {
+    forAll { (xs: List[A], f: A => A) =>
+      Buffer.fromIterable(xs).map(f) shouldBe Buffer.fromIterable(xs.map(f))
     }
   }
 }

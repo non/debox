@@ -1,11 +1,9 @@
-package debox.benchmark
+package debox
+package benchmark
 
 import scala.{specialized => spec}
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random._
-
-import spire.syntax.cfor._
-import debox._
 
 import com.google.caliper.Param
 

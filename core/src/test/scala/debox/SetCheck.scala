@@ -1,21 +1,14 @@
 package debox
 
-import org.scalatest.matchers.ShouldMatchers
 import org.scalatest._
 import prop._
-import org.scalacheck.Arbitrary._
-import org.scalacheck._
-import Gen._
-import Arbitrary.arbitrary
-
-import spire.algebra.Order
-import spire.std.any._
+import org.scalacheck.{Arbitrary, Cogen}
 
 import scala.collection.mutable
-import scala.reflect._
+import scala.reflect.ClassTag
 
-abstract class SetCheck[A: Arbitrary: ClassTag: Order]
-    extends PropSpec with Matchers with GeneratorDrivenPropertyChecks {
+abstract class SetCheck[A: Arbitrary: ClassTag: Cogen]
+    extends PropSpec with Matchers with PropertyChecks {
 
   import scala.collection.immutable.Set
   import debox.{Set => DSet, Map => DMap}
@@ -223,17 +216,6 @@ abstract class SetCheck[A: Arbitrary: ClassTag: Order]
       val b = DSet.fromIterable(xs)
       a.filterSelf(p)
       a shouldBe b.findAll(p)
-    }
-  }
-
-  property("toBuffer") {
-    forAll { (xs: Array[A]) =>
-      val set1 = DSet.fromArray(xs)
-      val buf1 = set1.toBuffer
-      val buf2 = Buffer.fromArray(xs)
-      buf1.sort
-      buf2.sort
-      //buf1 shouldBe buf2
     }
   }
 

@@ -21,7 +21,7 @@ object Util {
   /**
    * Given a src array, an offset, and a len, return a new array which
    * copies the relevant area of src.
-   * 
+   *
    * This method does not do any size or bounds checking.
    */
   def alloc[@sp A: ClassTag](src: Array[A], offset: Int, len: Int) = {
@@ -46,11 +46,11 @@ object Util {
 
   /**
    * Takes in something like:
-   *   ArrayUtil.alloc[Int](11, 22, 33, 44)(ct)
+   *   Util.array[Int](11, 22, 33, 44)
    *
    * and builds a tree like:
    *   {
-   *     val arr:Array[Int] = ct.newArray(4)
+   *     val arr = new Array[Int](4)
    *     arr.update(0, 11)
    *     arr.update(1, 22)
    *     arr.update(2, 33)
@@ -61,7 +61,7 @@ object Util {
   def arrayMacro[A: c.WeakTypeTag](c: Context)(as: c.Expr[A]*): c.Expr[Array[A]] = {
     import c.mirror._
     import c.universe._
-  
+
     val n = as.length
     val tpe = implicitly[c.WeakTypeTag[A]].tpe
     val valdef = q"val arr = new Array[$tpe]($n)"
@@ -74,7 +74,7 @@ object Util {
 
   /**
    * Given a number n, this method returns n if n is a power-of-two.
-   * 
+   *
    * Otherwise, it returns the smallest power-of-two larger than n.
    */
   def nextPowerOfTwo(n: Int): Int = {

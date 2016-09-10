@@ -4,41 +4,38 @@ import scala.annotation.tailrec
 import scala.reflect.ClassTag
 import scala.{specialized => sp}
 
-import spire.algebra._
-import spire.syntax.all._
-
 /**
  * Map is a mutable hash map, with open addressing and double hashing.
- * 
+ *
  * Map provides constant-time membership tests and access, and
  * amortized constant-time addition and removal. One underlying array
  * stores keys, another stores values, and another tracks which
  * buckets are used and defined.
- * 
+ *
  * The hashing mechanism is exactly the same as that used in
  * debox.Set, which means that constructing a Set from the keys is
  * relatively fast.
  *
  * When the generic types are known (or the caller is specialized on them),
  * Map[A, B] will store the keys and values in unboxed arrays.
- * 
+ *
  * One fundamental difference between debox.Map and Scala's various
  * map types is that debox.Map does not claim to contain tuples, and
  * most of methods handle keys and values as separate parameters,
  * rather than item tuples. This means that methods like foreach() and
  * mapKey() take Function2 instances rather than Function1 instances.
- * 
+ *
  * It also means that instead of generic Tuple2 => Tuple2 functions,
  * Debox uses more specialized methods. For example:
- * 
+ *
  *   // Scala version
  *   scalaMap.map { case (k, v) => (k, v + 3) }
- * 
+ *
  *   // Debox versions
  *   deboxMap.mapValues(v => v + 3)           // best
  *   deboxMap.mapItems((k, v) => (k, v + 3))  // allocs unnecessary tuples
  *   deboxMap.
- * 
+ *
  * This means that the Debox Map API has some real differences
  * compared to Scala's API, so please check the methods you are using.
  */
@@ -57,10 +54,10 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
 
   /**
    * Check if two Maps are equal.
-   * 
+   *
    * Equal means the maps have the same types (which is checked
    * using the ClassTag instances) and the same contents.
-   * 
+   *
    * Comparing Maps with any of Scala's collection types will
    * return false.
    */
@@ -75,11 +72,11 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
 
   /**
    * Hash the contents of the map to an Int value.
-   * 
+   *
    * By xor'ing all the map's keys and values together, we can be sure
    * that maps with the same contents will have the same hashCode
    * regardless of the order those items appear.
-   * 
+   *
    * This is an O(n) operation.
    */
   override def hashCode: Int = {
@@ -90,7 +87,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
 
   /**
    * Return a string representation of the contents of the map.
-   * 
+   *
    * This is an O(n) operation.
    */
   override def toString: String = {
@@ -119,37 +116,37 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
 
   /**
    * Return the size of this Map as an Int.
-   * 
+   *
    * Since Maps use arrays, their size is limited to what a 32-bit
    * signed integer can represent.
-   * 
+   *
    * This is an O(1) operation.
    */
   final def size: Int = len
 
   /**
    * Return true if the Map is empty, false otherwise.
-   * 
+   *
    * This is an O(1) operation.
    */
   final def isEmpty: Boolean = len == 0
 
   /**
    * Return true if the Map is non-empty, false otherwise.
-   * 
+   *
    * This is an O(1) operation.
    */
   final def nonEmpty: Boolean = len > 0
 
   /**
    * This method stores associates value with key.
-   * 
+   *
    * If a previous value was associated with the key, it is
    * overwritten.
-   * 
+   *
    * This method is usually invoked as map(key) = value, but can also
    * be invoked as map.update(key, value).
-   * 
+   *
    * On average, this is an amortized O(1) operation; the worst-case
    * is O(n), which will happen when the map needs to be resized.
    */
@@ -180,9 +177,9 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
 
   /**
    * This method removes any value associated with key.
-   * 
+   *
    * If there was no previous value, this method does nothing.
-   * 
+   *
    * On average, this is an O(1) operation; the (unlikely) worst-case
    * is O(n).
    */
@@ -204,24 +201,24 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
 
   /**
    * Make a (shallow) copy of this map.
-   * 
+   *
    * This method creates a copy of the map with the same
    * structure. However, the actual keys and values will not be
    * copied.
-   * 
+   *
    * This is an O(n) operation.
    */
   final def copy: Map[A, B] = new Map(keys.clone, vals.clone, buckets.clone, len, used)
 
   /**
    * Clears the map's internal state.
-   * 
+   *
    * After calling this method, the set's state is identical to that
    * obtained by calling Map.empty[A, B].
-   * 
+   *
    * The previous arrays are not retained, and will become available
    * for garbage collection.
-   * 
+   *
    * This is an O(1) operation, but may generate a lot of garbage if
    * the set was previously large.
    */
@@ -229,12 +226,12 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
 
   /**
    * Aborb the given map's contents into this map.
-   * 
+   *
    * This method does not copy the other map's contents. Thus, this
    * should only be used when there are no saved references to the
    * other map. It is private, and exists primarily to simplify the
    * implementation of certain methods.
-   * 
+   *
    * This is an O(1) operation, although it can potentially generate a
    * lot of garbage (if the map was previously large).
    */
@@ -250,7 +247,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
 
   /**
    * Return whether the key is present in the Map or not.
-   * 
+   *
    * On average, this is an O(1) operation; the (unlikely) worst-case
    * is O(n).
    */
@@ -269,7 +266,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
   /**
    * Return whether the key is present in the Map with the given value
    * or not.
-   * 
+   *
    * On average, this is an O(1) operation; the (unlikely) worst-case
    * is O(n).
    */
@@ -288,7 +285,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
   /**
    * Return the key's current value in the map, throwing an exception
    * if the key is not found.
-   * 
+   *
    * On average, this is an O(1) operation; the (unlikely) worst-case
    * is O(n).
    */
@@ -307,14 +304,14 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
   /**
    * Return the key's current value in the map, returning the given
    * fallback value if the key is not found.
-   * 
+   *
    * Unlike Scala's method, this method is eager in its second
    * parameters, so it should only be used if the default value is
    * already available (or a literal, or very cheap).
-   * 
+   *
    * In cases where a lazy parameter would be desired, you should use
    * something like: myMap.get(key).getOrElse(default).
-   * 
+   *
    * On average, this is an O(1) operation; the (unlikely) worst-case
    * is O(n).
    */
@@ -334,11 +331,11 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
    * Return the key's current value in the map, returning the given
    * fallback value and updating the key with that value if the key
    * is not found.
-   * 
+   *
    * Unlike Scala's method, this method is eager in its second
    * parameters, so it should only be used if the default value is
    * already available (or a literal, or very cheap).
-   * 
+   *
    * On average, this is an O(1) operation; the (unlikely) worst-case
    * is O(n).
    */
@@ -357,7 +354,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
         if (used > limit) grow()
         fallback
       }
-      else if (status == 2) 
+      else if (status == 2)
         loop((i << 2) + i + perturbation + 1, perturbation >> 5, j)
       else if (status == 3 && keys(j) == key) vals(j)
       else
@@ -370,7 +367,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
   /**
    * Return the key's current value in the map as an Option, returning
    * None if the key is not found.
-   * 
+   *
    * On average, this is an O(1) operation; the (unlikely) worst-case
    * is O(n).
    */
@@ -388,53 +385,18 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
 
   /**
    * Given (key, value), update the map to bind value to key.
-   * 
+   *
    * Unless the caller has already constrcuted the item tuple, it is
    * usually better to say 'map(key) = value' directly to avoid
    * allocating one.
-   * 
+   *
    * This is an O(1) operation.
    */
   final def +=(kv: (A, B)): Unit = update(kv._1, kv._2)
 
   /**
-   * Add the items from the given map to this map, combining values
-   * using the provided Monoid[B].
-   * 
-   * This is an O(m) operation, where m is the size of the rhs.
-   */
-  final def ++=(rhs: Map[A, B])(implicit ev: Monoid[B]): Unit = {
-    val z = ev.id
-    rhs.foreach { (k, v) => lhs(k) = lhs.getOrElse(k, z) |+| v }
-  }
-
-  /**
-   * Add the items from the given iterable to this map, combining
-   * values using the provided Monoid[B].
-   * 
-   * This is an O(m) operation, where m is the size of the rhs.
-   */
-  final def ++=(rhs: Iterable[(A, B)])(implicit ev: Monoid[B]): Unit = {
-    val z = ev.id
-    rhs.foreach { case (k, v) => lhs(k) = lhs.getOrElse(k, z) |+| v }
-  }
-
-  /**
-   * Combine the two maps into a new map, using the provided
-   * CMonoid[B] to merge values for the same key.
-   * 
-   * This is an O(m+n) operation, where m and n are the size of the
-   * maps.
-   */
-  final def ++(rhs: Map[A, B])(implicit ev: Monoid[B]): Map[A, B] = {
-    val out = lhs.copy
-    out ++= rhs
-    out
-  }
-
-  /**
    * Remove the keys in the given set from this map.
-   * 
+   *
    * On average, this is an O(m) operation, where m is the size of the
    * lhs or rhs, whichever is smaller.
    */
@@ -454,7 +416,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
 
   /**
    * Remove the keys in the given set from this iterable.
-   * 
+   *
    * On average, this is an O(m) operation, where m is the size of the
    * rhs.
    */
@@ -463,9 +425,9 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
 
   /**
    * Remove all items whose keys are not in the provided set.
-   * 
+   *
    * This method modifies the existing map.
-   * 
+   *
    * On average, this is an O(m) operation, where m is the size of the
    * lhs or rhs, whichever is smaller.
    */
@@ -490,11 +452,11 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
 
   /**
    * Return a new Set containing the current map's keys.
-   * 
+   *
    * This method copies the underlying key array, but does not need to
    * rehash the keys, so it is relatively fast (implemented using
    * System.arraycopy). The keys themselves are not copied.
-   * 
+   *
    * This is an O(n) operation, where n is the size of the map.
    */
   final def keysSet: Set[A] = new Set(keys.clone, buckets.clone, len, used)
@@ -502,14 +464,14 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
   /**
    * Return a new array containing the current map's values, in an
    * unspecified order.
-   * 
+   *
    * This method is not a true function, in that map values which are
    * equivalent (have the same keys and values) may return
    * differently-ordered arrays.
-   * 
+   *
    * To get an unordered set of the values, use valuesSet. To get a
    * sorted valuesArray, use sortedValuesArray.
-   * 
+   *
    * This is an O(n) operation, where n is the size of the map.
    */
   final def valuesArray: Array[B] = {
@@ -523,14 +485,14 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
 
   /**
    * Transform this map into an array.
-   * 
+   *
    * This method uses a function to go from key and value to an
    * element to be stored in the array.
-   * 
+   *
    * The order of the array is non-deterministic. Thus, maps that have
    * the same keys and values may produce different arrays. The size
    * of the array is guaranteed to be equal to the size of the map.
-   * 
+   *
    * On average, this is an O(n) operation, where n is the size of the
    * map.
    */
@@ -548,14 +510,14 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
 
   /**
    * Transform this map into a set.
-   * 
+   *
    * This method uses a function to go from key and value to an
    * element to be added to a set.
-   * 
+   *
    * Two maps with the same keys and values will always produce the
    * same set. The size of the resulting set may be smaller than the
    * map if several function invocations return the same result.
-   * 
+   *
    * On average, this is an O(n) operation, where n is the size of the
    * map.
    */
@@ -570,16 +532,16 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
 
   /**
    * Transform this map into another map.
-   * 
+   *
    * This method uses a function to go from key and value to a pair,
    * which will be added to the map.
-   * 
+   *
    * If multiple invocations of the provided function return values
    * with the same key, it is non-deterministic what value the new map
    * will have for the key. In these cases, two equal maps will
    * produce different results, and the resulting map will be smaller
    * than this map.
-   * 
+   *
    * On average, this is an O(n) operation, where n is the size of the
    * map.
    */
@@ -592,43 +554,16 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
 
   /**
    * Transform this map into another map.
-   * 
-   * This method uses a function to go from key and value to a pair,
-   * which will be added to the map.
-   * 
-   * If multiple invocations of the provided function return values
-   * with the same key, the given commutative monoid will be used to
-   * combine the values. This commutativity ensures that maps with the
-   * same keys and values will always produce the same
-   * result. However, if duplicate keys are produced, the resulting
-   * map will be smaller than this map.
-   * 
-   * On average, this is an O(n) operation, where n is the size of the
-   * map.
-   */
-  final def mapItemsToMap[@sp (Int, Long, AnyRef) C: ClassTag, @sp D: ClassTag](f: (A, B) => (C, D))(implicit ev: CMonoid[D]): Map[C, D] = {
-    val result = Map.ofSize[C, D](len)
-    val z = ev.id
-    foreach { (a, b) =>
-      val (c, d) = f(a, b)
-      result(c) = result.getOrElse(c, z) |+| d
-    }
-    result.compact
-    result
-  }
-
-  /**
-   * Transform this map into another map.
-   * 
+   *
    * This method uses a function to go from an existing key to a new
    * key, and will add the new key with the existing value to the new
    * map.
-   * 
+   *
    * If multiple invocations of the provided function return the same
    * key, it is non-deterministic what value the new map will have for
    * the key. In these cases, two equal maps will produce different
    * results, and the resulting map will be smaller than this map.
-   * 
+   *
    * On average, this is an O(n) operation, where n is the size of the
    * map.
    */
@@ -641,43 +576,15 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
 
   /**
    * Transform this map into another map.
-   * 
-   * This method uses a function to go from an existing key to a new
-   * key, and will add the new key with the existing value to the new
-   * map.
-   * 
-   * If multiple invocations of the provided function return values
-   * with the same key, the given commutative monoid will be used to
-   * combine the values. This commutativity ensures that maps with the
-   * same keys and values will always produce the same
-   * result. However, if duplicate keys are produced, the resulting
-   * map will be smaller than this map.
-   * 
-   * On average, this is an O(n) operation, where n is the size of the
-   * map.
-   */
-  final def mapKeys[@sp (Int, Long, AnyRef) C: ClassTag](f: A => C)(implicit ev: CMonoid[B]): Map[C, B] = {
-    val result = Map.ofSize[C, B](len)
-    val z = ev.id
-    foreach { (a, b) =>
-      val c = f(a)
-      result(c) = result.getOrElse(c, z) |+| b
-    }
-    result.compact
-    result
-  }
-
-  /**
-   * Transform this map into another map.
-   * 
+   *
    * This method uses a function to go from an existing value to a new
    * value, and will add the existing key with the new value to the
    * new map.
-   * 
+   *
    * The new map will always be the same size as the existing map, and
    * maps with equivalent keys and values will always produce
    * equivalent maps.
-   * 
+   *
    * On average, this is an O(n) operation, where n is the size of the
    * map.
    */
@@ -691,9 +598,9 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
 
   /**
    * Run the provided function on each key and value.
-   * 
+   *
    * The order the keys and values are accessed is non-deterministic.
-   * 
+   *
    * This is an O(n) operation, where n is the size of the map.
    */
   final def foreach(f: (A, B) => Unit): Unit =
@@ -701,9 +608,9 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
 
   /**
    * Run the provided function on each key.
-   * 
+   *
    * The order the keys are accessed is non-deterministic.
-   * 
+   *
    * This is an O(n) operation, where n is the size of the map.
    */
   final def foreachKey(f: A => Unit): Unit =
@@ -711,9 +618,9 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
 
   /**
    * Run the provided function on each value.
-   * 
+   *
    * The order the values are accessed is non-deterministic.
-   * 
+   *
    * This is an O(n) operation, where n is the size of the map.
    */
   final def foreachValue(f: B => Unit): Unit =
@@ -721,9 +628,9 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
 
   /**
    * Run the provided function on each value.
-   * 
+   *
    * The order the values are accessed is non-deterministic.
-   * 
+   *
    * This is an O(n) operation, where n is the size of the map.
    */
   final def transformValues(f: (A, B) => B): Unit = {
@@ -734,19 +641,19 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
 
   /**
    * Grow the underlying array to best accomodate the map's size.
-   * 
+   *
    * To preserve hashing access speed, the map's size should never be
    * more than 66% of the underlying array's size. When this size is
    * reached, the map needs to be updated (using this method) to have a
    * larger array.
-   * 
+   *
    * The underlying array's size must always be a multiple of 2, which
    * means this method grows the array's size by 2x (or 4x if the map
    * is very small). This doubling helps amortize the cost of
    * resizing, since as the map gets larger growth will happen less
    * frequently. This method returns a null of type Unit1[A] to
    * trigger specialization without allocating an actual instance.
-   * 
+   *
    * Growing is an O(n) operation, where n is the map's size.
    */
   final def grow(): Unit2[A, B] = {
@@ -761,15 +668,15 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
 
   /**
    * Compacts the map's internal arrays to reduce memory usage.
-   * 
+   *
    * This operation should be used if a map has been shrunk
    * (e.g. through --=) and is not likely to grow again.
-   * 
+   *
    * This method will shrink the map to the smallest possible size
    * that allows it to be <66% full. It returns a null of type
    * Unit2[A, B] to trigger specialization without allocating an
    * actual instance.
-   * 
+   *
    * This is an O(n) operation, where n it the set's size.
    */
   final def compact(): Unit2[A, B] = {
@@ -784,9 +691,9 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
   /**
    * Return true if every item in the map satisfies the given
    * predicate, false otherwise.
-   * 
+   *
    * Note that if the map is empty, all predicates will return true.
-   * 
+   *
    * On average, this is an O(n) operation, although false results may
    * be returned more quickly.
    */
@@ -796,9 +703,9 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
   /**
    * Return true if any item in the map satisfies the given
    * predicate, false otherwise.
-   * 
+   *
    * Note that if the map is empty, all predicates will return false.
-   * 
+   *
    * On average, this is an O(n) operation, although true results may
    * be returned more quickly.
    */
@@ -808,10 +715,10 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
   /**
    * For the given predicate, return Some(item) for an item that
    * satisfies the predicate, or None otherwise.
-   * 
+   *
    * The order that items are checked is non-deterministic. Thus, maps
    * with the same keys and values may find different items first.
-   * 
+   *
    * On average, this is an O(n) operation, although results may be
    * returned more quickly.
    */
@@ -824,10 +731,10 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
   /**
    * For the given predicate, return a map of all items that satisfy
    * the predicate.
-   * 
+   *
    * Maps with the same keys and values are guaranteed to return the
    * same map from this method.
-   * 
+   *
    * This is an O(n) operation, where n is the size of the map.
    */
   def findAll(p: (A, B) => Boolean): Map[A, B] = {
@@ -839,10 +746,10 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
   /**
    * Return the lowest index whose key/value do not satisfy the
    * predicate, or -1 otherwise.
-   * 
+   *
    * The indices returned correspond to the map's internal
    * arrays. Care should be taken.
-   * 
+   *
    * On average, this is an O(n) operation, where n is the size of the
    * map, although non-negative results may be returned more quickly.
    */
@@ -858,10 +765,10 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
   /**
    * Return the lowest index whose key/value satisfy the predicate,
    * or -1 otherwise.
-   * 
+   *
    * The indices returned correspond to the map's internal
    * arrays. Care should be taken.
-   * 
+   *
    * On average, this is an O(n) operation, where n is the size of the
    * map, although non-negative results may be returned more quickly.
    */
@@ -876,15 +783,15 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
 
   /**
    * Return an iterator over this map's contents.
-   * 
+   *
    * This method does not do any copying or locking. Thus, if the map
    * is modified while the iterator is "live" the results will be
    * undefined and probably bad. Also, since maps are not ordered,
    * there is no guarantee elements will be returned in a particular
    * order.
-   * 
+   *
    * Use this.copy.iterator to get a "clean" iterator if needed.
-   * 
+   *
    * Creating the iterator is an O(1) operation.
    */
   def iterator: Iterator[(A, B)] = {
@@ -908,7 +815,7 @@ object Map {
 
   /**
    * Create an empty Map.
-   * 
+   *
    * Example: Map.empty[Int, String]
    */
   def empty[@sp(Int, Long, AnyRef) A: ClassTag, @sp B: ClassTag]: Map[A, B] =
@@ -922,7 +829,7 @@ object Map {
    * alignment. Map uses arrays whose lengths are powers of two, and
    * needs at least 33% of the map free to enable good hashing
    * performance.
-   * 
+   *
    * Example: Map.ofSize[Int, String](100).
    */
   def ofSize[@sp(Int, Long, AnyRef) A: ClassTag, @sp B: ClassTag](n: Int): Map[A, B] =
@@ -930,7 +837,7 @@ object Map {
 
   /**
    * Allocate an empty Map, with underlying storage of size n.
-   * 
+   *
    * This method is useful if you know exactly how big you want the
    * underlying array to be. In most cases ofSize() is probably what
    * you want instead.
@@ -946,11 +853,11 @@ object Map {
 
   /**
    * Create a new literal map.
-   * 
+   *
    * Note that this method will box the given items. Unless you
    * already have a sequence of tuples, another constructor may
    * require fewer allocations.
-   * 
+   *
    * Example: Map(1 -> "cat", 2 -> "dog", 3 -> "fish")
    */
   def apply[@sp(Int, Long, AnyRef) A: ClassTag, @sp B: ClassTag](pairs: (A, B)*): Map[A, B] =
@@ -958,7 +865,7 @@ object Map {
 
   /**
    * Create a map from an array of keys and another array of values.
-   * 
+   *
    * Example: Map(Array(1,2,3), Array("cat", "dog", "fish"))
    */
   def fromArrays[@sp(Int, Long, AnyRef) A: ClassTag, @sp B: ClassTag](ks: Array[A], vs: Array[B]): Map[A, B] = {
@@ -970,11 +877,11 @@ object Map {
 
   /**
    * Create a map from an iterable of tuples.
-   * 
+   *
    * Note that this method will box the given items. Unless you
    * already have a sequence of tuples, another constructor may
    * require fewer allocations.
-   * 
+   *
    * Example: Map.fromIterable(List((1, "cat"), (2, "dog"), (3, "fish")))
    */
   def fromIterable[@sp(Int, Long, AnyRef) A: ClassTag, @sp B: ClassTag](pairs: Iterable[(A, B)]): Map[A, B] = {
@@ -984,53 +891,4 @@ object Map {
     while (it.hasNext) { result += it.next }
     result
   }
-
-  /**
-   * Provide an Eq[Map[A, B]] instance.
-   * 
-   * Since Maps are so reliant on equality, and use hash codes
-   * internally, the default equality is used to compare elements.
-   */
-  implicit def eqv[A, B] =
-    new Eq[Map[A, B]] {
-      def eqv(lhs: Map[A, B], rhs: Map[A, B]): Boolean = lhs == rhs
-    }
-
-  /**
-   * Provide a Monoid[Map[A, B]].
-   * 
-   * The maps are combined key-by-key, using |+| to merge values if
-   * necessary.
-   */
-  implicit def monoid[@sp A: ClassTag, @sp B: ClassTag: Monoid] =
-    new Monoid[Map[A, B]] {
-      def id: Map[A, B] = Map.empty[A, B]
-      def op(lhs: Map[A, B], rhs: Map[A, B]): Map[A, B] = lhs ++ rhs
-    }
-
-  /**
-   * Provide an AdditiveMonoid[Map[A, B]].
-   * 
-   * The maps are combined key-by-key, using + to merge values if
-   * necessary.
-   */
-  implicit def additiveMonoid[@sp A: ClassTag, @sp B: ClassTag: AdditiveMonoid] =
-    new AdditiveMonoid[Map[A, B]] {
-      implicit val m: Monoid[B] = implicitly[AdditiveMonoid[B]].additive
-      def zero: Map[A, B] = Map.empty[A, B]
-      def plus(lhs: Map[A, B], rhs: Map[A, B]): Map[A, B] = lhs ++ rhs
-    }
-
-  /**
-   * Provide an MultiplicativeMonoid[Map[A, B]].
-   * 
-   * The maps are combined key-by-key, using * to merge values if
-   * necessary.
-   */
-  implicit def multiplicativeMonoid[@sp A: ClassTag, @sp B: ClassTag: MultiplicativeMonoid] =
-    new MultiplicativeMonoid[Map[A, B]] {
-      implicit val m: Monoid[B] = implicitly[MultiplicativeMonoid[B]].multiplicative
-      def one: Map[A, B] = Map.empty[A, B]
-      def times(lhs: Map[A, B], rhs: Map[A, B]): Map[A, B] = lhs ++ rhs
-    }
 }
