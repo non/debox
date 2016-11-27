@@ -537,6 +537,18 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) e
     Util.alloc(elems, 0, len)
 
   /**
+   * Create a set out of the elements in the buffer.
+   *
+   * This is an O(n) operation, where n is the length of the buffer.
+   */
+  def toSet: debox.Set[A] = {
+    val set = debox.Set.ofSize[A](len)
+    val limit = len
+    cfor(0)(_ < limit, _ + 1)(i => set += arr(i))
+    set
+  }
+
+  /**
    * Wrap this buffer in an Iterable[A] instance.
    *
    * This method exists as a cheap way to get compatibility with Scala
