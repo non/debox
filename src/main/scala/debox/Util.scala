@@ -1,16 +1,17 @@
 package debox
 
-import annotation.tailrec
-import scala.math.{min, max}
 import scala.{specialized => sp}
 
 import language.experimental.macros
 
 import scala.reflect.ClassTag
-import scala.reflect.macros.Context
+import scala.reflect.macros.blackbox.Context
 
-case class DeboxOverflowError(n: Int) extends Exception("size %s exceeds max" format n)
-class KeyNotFoundException(k: String) extends Exception("key %s was not found" format k)
+case class DeboxOverflowError(n: Int)
+    extends Exception(s"size $n exceeds max")
+
+case class KeyNotFoundException(k: String)
+    extends Exception(s"key $k was not found")
 
 class Unit1[@sp A]
 
@@ -31,7 +32,7 @@ object Util {
   }
 
   def bufferMacro[A: c.WeakTypeTag](c: Context)(as: c.Expr[A]*): c.Expr[debox.Buffer[A]] = {
-    import c.mirror._
+    //import c.mirror._
     import c.universe._
     val arr = arrayMacro(c)(as: _*)
     c.Expr[debox.Buffer[A]](q"debox.unsafe($arr)")
@@ -59,7 +60,7 @@ object Util {
    *   }
    */
   def arrayMacro[A: c.WeakTypeTag](c: Context)(as: c.Expr[A]*): c.Expr[Array[A]] = {
-    import c.mirror._
+    //import c.mirror._
     import c.universe._
   
     val n = as.length
@@ -77,7 +78,7 @@ object Util {
    * 
    * Otherwise, it returns the smallest power-of-two larger than n.
    */
-  def nextPowerOfTwo(n: Int): Int = {
+  final def nextPowerOfTwo(n: Int): Int = {
     val x = java.lang.Integer.highestOneBit(n)
     if (x == n) n else x * 2
   }

@@ -225,7 +225,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
    * This is an O(1) operation, but may generate a lot of garbage if
    * the set was previously large.
    */
-  final def clear: Unit = absorb(Map.empty[A, B])
+  final def clear(): Unit = absorb(Map.empty[A, B])
 
   /**
    * Aborb the given map's contents into this map.
@@ -296,7 +296,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
     @inline @tailrec def loop(i: Int, perturbation: Int): B = {
       val j = i & mask
       val status = buckets(j)
-      if (status == 0) throw new KeyNotFoundException(key.toString)
+      if (status == 0) throw KeyNotFoundException(key.toString)
       else if (status == 3 && keys(j) == key) vals(j)
       else loop((i << 2) + i + perturbation + 1, perturbation >> 5)
     }
@@ -404,7 +404,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
    * This is an O(m) operation, where m is the size of the rhs.
    */
   final def ++=(rhs: Map[A, B])(implicit ev: Monoid[B]): Unit = {
-    val z = ev.id
+    val z = ev.empty
     rhs.foreach { (k, v) => lhs(k) = lhs.getOrElse(k, z) |+| v }
   }
 
@@ -415,7 +415,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
    * This is an O(m) operation, where m is the size of the rhs.
    */
   final def ++=(rhs: Iterable[(A, B)])(implicit ev: Monoid[B]): Unit = {
-    val z = ev.id
+    val z = ev.empty
     rhs.foreach { case (k, v) => lhs(k) = lhs.getOrElse(k, z) |+| v }
   }
 
@@ -608,7 +608,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
    */
   final def mapItemsToMap[@sp (Int, Long, AnyRef) C: ClassTag, @sp D: ClassTag](f: (A, B) => (C, D))(implicit ev: CMonoid[D]): Map[C, D] = {
     val result = Map.ofSize[C, D](len)
-    val z = ev.id
+    val z = ev.empty
     foreach { (a, b) =>
       val (c, d) = f(a, b)
       result(c) = result.getOrElse(c, z) |+| d
@@ -658,7 +658,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
    */
   final def mapKeys[@sp (Int, Long, AnyRef) C: ClassTag](f: A => C)(implicit ev: CMonoid[B]): Map[C, B] = {
     val result = Map.ofSize[C, B](len)
-    val z = ev.id
+    val z = ev.empty
     foreach { (a, b) =>
       val c = f(a)
       result(c) = result.getOrElse(c, z) |+| b
@@ -1004,8 +1004,8 @@ object Map {
    */
   implicit def monoid[@sp A: ClassTag, @sp B: ClassTag: Monoid] =
     new Monoid[Map[A, B]] {
-      def id: Map[A, B] = Map.empty[A, B]
-      def op(lhs: Map[A, B], rhs: Map[A, B]): Map[A, B] = lhs ++ rhs
+      def empty: Map[A, B] = Map.empty[A, B]
+      def combine(lhs: Map[A, B], rhs: Map[A, B]): Map[A, B] = lhs ++ rhs
     }
 
   /**

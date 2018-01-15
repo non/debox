@@ -1,6 +1,6 @@
 package debox.benchmark
 
-import com.google.caliper.{Benchmark, Param, SimpleBenchmark, Runner}
+import com.google.caliper.{Benchmark, /*Param, */SimpleBenchmark, Runner}
 
 import scala.reflect.ClassTag
 

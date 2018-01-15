@@ -1,6 +1,6 @@
 package debox
 
-import scala.annotation.{switch, tailrec}
+import scala.annotation.tailrec
 import scala.reflect.ClassTag
 import scala.{specialized => sp}
 
@@ -860,7 +860,7 @@ object Set {
    */
   implicit def cmonoid[@sp A: ClassTag] =
     new CMonoid[Set[A]] {
-      def id = Set.empty[A]
-      def op(lhs: Set[A], rhs: Set[A]): Set[A] = lhs | rhs
+      def empty = Set.empty[A]
+      def combine(lhs: Set[A], rhs: Set[A]): Set[A] = lhs | rhs
     }
 }
