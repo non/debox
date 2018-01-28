@@ -1,97 +1,112 @@
 package debox.benchmark
 
-import scala.reflect.ClassTag
-
-import scala.{specialized => spec}
 import scala.collection.mutable
-import scala.util.Random._
-
+import scala.util.Random.nextLong
 import spire.syntax.cfor._
+import org.openjdk.jmh.annotations._
 
-import com.google.caliper.Param
+object SetBenchmark {
 
-object SetBenchmarks extends MyRunner(classOf[SetBenchmarks])
+  @State(Scope.Benchmark)
+  class BenchmarkState {
 
-class SetBenchmarks extends MyBenchmark {
-  @Param(Array("6", "8", "11", "14", "17", "20"))
-  var pow: Int = 0
+    @Param(Array("8", "11", "14", "17", "20"))
+    var pow: Int = 0
 
-  var data: Array[Long] = null
-  var data2: Array[Long] = null
+    var data: Array[Long] = _
+    var data2: Array[Long] = _
+    var scalaSet: mutable.Set[Long] = _
+    var scalaSet2: mutable.Set[Long] = _
+    var javaSet: java.util.HashSet[Long] = _
+    var javaSet2: java.util.HashSet[Long] = _
+    var deboxSet: debox.Set[Long] = _
+    var deboxSet2: debox.Set[Long] = _
 
-  var scalaSet: mutable.Set[Long] = null
-  var javaSet: java.util.HashSet[Long] = null
-  var deboxSet: debox.Set[Long] = null
+    @Setup(Level.Trial)
+    def setup(): Unit = {
+      val n = scala.math.pow(2, pow.toDouble).toInt
+      data = init(n)(nextLong).map(x => if (x == 0L) 1L else x)
+      data2 = init(n)(nextLong).map(x => if (x == 0L) 1L else x)
 
-  var scalaSet2: mutable.Set[Long] = null
-  var javaSet2: java.util.HashSet[Long] = null
-  var deboxSet2: debox.Set[Long] = null
+      scalaSet = mutable.Set.empty[Long]
+      javaSet = new java.util.HashSet[Long]
+      deboxSet = debox.Set.empty[Long]
 
-  override protected def setUp() {
-    val n = scala.math.pow(2, pow).toInt
-    data = init(n)(nextLong).map(x => if (x == 0L) 1L else x)
-    data2 = init(n)(nextLong).map(x => if (x == 0L) 1L else x)
+      cfor(0)(_ < data.length, _ + 1) { i =>
+        scalaSet.add(data(i))
+        javaSet.add(data(i))
+        deboxSet.add(data(i))
+      }
 
-    scalaSet = mutable.Set.empty[Long]
-    javaSet = new java.util.HashSet[Long]
-    deboxSet = debox.Set.empty[Long]
+      scalaSet2 = mutable.Set.empty[Long]
+      javaSet2 = new java.util.HashSet[Long]
+      deboxSet2 = debox.Set.empty[Long]
 
-    cfor(0)(_ < data.length, _ + 1) { i =>
-      scalaSet.add(data(i))
-      javaSet.add(data(i))
-      deboxSet.add(data(i))
-    }
-
-    scalaSet2 = mutable.Set.empty[Long]
-    javaSet2 = new java.util.HashSet[Long]
-    deboxSet2 = debox.Set.empty[Long]
-
-    cfor(0)(_ < data2.length, _ + 1) { i =>
-      scalaSet2.add(data2(i))
-      javaSet2.add(data2(i))
-      deboxSet2.add(data2(i))
+      cfor(0)(_ < data2.length, _ + 1) { i =>
+        scalaSet2.add(data2(i))
+        javaSet2.add(data2(i))
+        deboxSet2.add(data2(i))
+      }
     }
   }
+}
 
-  // map
-  val ms = implicitly[ClassTag[Int]]
+class SetBenchmark {
 
-  // build benchmark
-  def timeBuildScalaSet(reps: Int) = run(reps) {
+  import SetBenchmark.BenchmarkState
+
+  @Benchmark
+  def timeBuildScalaSet(st: BenchmarkState) = {
+    val data = st.data
     val s = mutable.Set.empty[Long]
     cfor(0)(_ < data.length, _ + 1) { i => s.add(data(i)) }
     s.size
   }
-  def timeBuildJavaSet(reps: Int) = run(reps) {
+
+  @Benchmark
+  def timeBuildJavaSet(st: BenchmarkState) = {
+    val data = st.data
     val s = new java.util.HashSet[Long]
     cfor(0)(_ < data.length, _ + 1) { i => s.add(data(i)) }
     s.size
   }
-  def timeBuildDeboxSet(reps: Int) = run(reps) {
+
+  @Benchmark
+  def timeBuildDeboxSet(st: BenchmarkState) = {
+    val data = st.data
     val s = debox.Set.empty[Long]
     cfor(0)(_ < data.length, _ + 1) { i => s += data(i) }
     s.size
   }
 
-  // unbuild benchmark
-  def timeUnbuildScalaSet(reps: Int) = run(reps) {
+  @Benchmark
+  def timeUnbuildScalaSet(st: BenchmarkState) = {
+    val data = st.data
+    val scalaSet = st.scalaSet
     val s = scalaSet.clone
     cfor(0)(_ < data.length, _ + 1) { i => s.remove(data(i)) }
     s.size
   }
-  def timeUnbuildJavaSet(reps: Int) = run(reps) {
-    val s = javaSet.clone.asInstanceOf[java.util.HashSet[Long]]
+
+  @Benchmark
+  def timeUnbuildJavaSet(st: BenchmarkState) = {
+    val data = st.data
+    val s = st.javaSet.clone.asInstanceOf[java.util.HashSet[Long]]
     cfor(0)(_ < data.length, _ + 1) { i => s.remove(data(i)) }
     s.size
   }
-  def timeUnbuildDeboxSet(reps: Int) = run(reps) {
-    val s = deboxSet.copy
+
+  @Benchmark
+  def timeUnbuildDeboxSet(st: BenchmarkState) = {
+    val data = st.data
+    val s = st.deboxSet.copy
     cfor(0)(_ < data.length, _ + 1) { i => s -= data(i) }
     s.size
   }
   
-  // foreach benchmark
-  def timeForeachScalaSet(reps: Int) = run(reps) {
+  @Benchmark
+  def timeForeachScalaSet(st: BenchmarkState) = {
+    val scalaSet = st.scalaSet
     var t = 0L
     scalaSet.foreach(t += 4 * _)
     // scalaSet.foreach(t -= 2 * _)
@@ -99,7 +114,10 @@ class SetBenchmarks extends MyBenchmark {
     // scalaSet.foreach(t -= 2 * _)
     t
   }
-  def timeForeachJavaSet(reps: Int) = run(reps) {
+
+  @Benchmark
+  def timeForeachJavaSet(st: BenchmarkState) = {
+    val javaSet = st.javaSet
     var t = 0L
     val it1 = javaSet.iterator; while (it1.hasNext) { t += 4 * it1.next }
     // val it2 = javaSet.iterator; while (it2.hasNext) { t -= 2 * it2.next }
@@ -107,7 +125,10 @@ class SetBenchmarks extends MyBenchmark {
     // val it4 = javaSet.iterator; while (it4.hasNext) { t -= 2 * it4.next }
     t
   }
-  def timeForeachDeboxSet(reps: Int) = run(reps) {
+
+  @Benchmark
+  def timeForeachDeboxSet(st: BenchmarkState) = {
+    val deboxSet = st.deboxSet
     var t = 0L
     deboxSet.foreach(t += 4 * _)
     // deboxSet.foreach(t -= 2 * _)
@@ -117,19 +138,33 @@ class SetBenchmarks extends MyBenchmark {
   }
   
   // contains benchmark
-  def timeContainsScalaSet(reps: Int) = run(reps) {
+  @Benchmark
+  def timeContainsScalaSet(st: BenchmarkState) = {
+    val data = st.data
+    val data2 = st.data2
+    val scalaSet = st.scalaSet
     var t = 0
     cfor(0)(_ < data.length, _ + 1) { i => if (scalaSet(data(i))) t += 1 }
     cfor(0)(_ < data2.length, _ + 1) { i => if (scalaSet(data2(i))) t += 1 }
     t
   }
-  def timeContainsJavaSet(reps: Int) = run(reps) {
+
+  @Benchmark
+  def timeContainsJavaSet(st: BenchmarkState) = {
+    val data = st.data
+    val data2 = st.data2
+    val javaSet = st.javaSet
     var t = 0
     cfor(0)(_ < data.length, _ + 1) { i => if (javaSet.contains(data(i))) t += 1 }
     cfor(0)(_ < data2.length, _ + 1) { i => if (javaSet.contains(data2(i))) t += 1 }
     t
   }
-  def timeContainsDeboxSet(reps: Int) = run(reps) {
+
+  @Benchmark
+  def timeContainsDeboxSet(st: BenchmarkState) = {
+    val data = st.data
+    val data2 = st.data2
+    val deboxSet = st.deboxSet
     var t = 0
     cfor(0)(_ < data.length, _ + 1) { i => if (deboxSet(data(i))) t += 1 }
     cfor(0)(_ < data2.length, _ + 1) { i => if (deboxSet(data2(i))) t += 1 }
@@ -137,13 +172,18 @@ class SetBenchmarks extends MyBenchmark {
   }
   
   // map benchmark
-  def timeMapScalaSet(reps: Int) = run(reps) {
+  @Benchmark
+  def timeMapScalaSet(st: BenchmarkState) = {
+    val scalaSet = st.scalaSet
     val a = scalaSet.map(_.toInt + 3)
     val b = scalaSet.map(_.toString)
     val c = scalaSet.map(_ & 0xffff)
     (a, b, c)
   }
-  def timeMapDeboxSet(reps: Int) = run(reps) {
+
+  @Benchmark
+  def timeMapDeboxSet(st: BenchmarkState) = {
+    val deboxSet = st.deboxSet
     val a = deboxSet.map(_.toInt + 3)
     val b = deboxSet.map(_.toString)
     val c = deboxSet.map(_ & 0xffff)
@@ -151,13 +191,18 @@ class SetBenchmarks extends MyBenchmark {
   }
 
   // fold benchmark
-  def timeFoldScalaSet(reps: Int) = run(reps) {
+  @Benchmark
+  def timeFoldScalaSet(st: BenchmarkState) = {
+    val scalaSet = st.scalaSet
     val zmin = scalaSet.foldLeft(Long.MaxValue)((x, y) => if (y < x) y else x)
     val zmax = scalaSet.foldLeft(Long.MinValue)((x, y) => if (y > x) y else x)
     val t = scalaSet.foldLeft(0L)((t: Long, x: Long) => t + x)
     (zmin, zmax, t)
   }
-  def timeFoldDeboxSet(reps: Int) = run(reps) {
+
+  @Benchmark
+  def timeFoldDeboxSet(st: BenchmarkState) = {
+    val deboxSet = st.deboxSet
     val zmin = deboxSet.fold(Long.MaxValue)((x, y) => if (y < x) y else x)
     val zmax = deboxSet.fold(Long.MinValue)((x, y) => if (y > x) y else x)
     val t = deboxSet.fold(0L)((x, y) => x + y)
@@ -165,13 +210,18 @@ class SetBenchmarks extends MyBenchmark {
   }
 
   // partition benchmark
-  def timePartitionScalaSet(reps: Int) = run(reps) {
+  @Benchmark
+  def timePartitionScalaSet(st: BenchmarkState) = {
+    val scalaSet = st.scalaSet
     val a = scalaSet.partition(_ % 2 == 0)
     val b = scalaSet.partition(_ % 3 == 0)
     val c = scalaSet.partition(_ % 5 == 0)
     (a, b, c)
   }
-  def timePartitionDeboxSet(reps: Int) = run(reps) {
+
+  @Benchmark
+  def timePartitionDeboxSet(st: BenchmarkState) = {
+    val deboxSet = st.deboxSet
     val a = deboxSet.partition(_ % 2 == 0)
     val b = deboxSet.partition(_ % 3 == 0)
     val c = deboxSet.partition(_ % 5 == 0)

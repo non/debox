@@ -1,12 +1,10 @@
 package debox
 
-import org.scalatest.matchers.ShouldMatchers
 import org.scalatest._
 import prop._
 import org.scalacheck.Arbitrary._
 import org.scalacheck._
 import Gen._
-import Arbitrary.arbitrary
 
 import spire.algebra.Order
 import spire.compat._
@@ -18,10 +16,7 @@ import scala.reflect._
 abstract class BufferCheck[A: Arbitrary: ClassTag: Order]
     extends PropSpec with Matchers with GeneratorDrivenPropertyChecks {
 
-  import scala.collection.immutable.Set
-  //import scala.collection.immutable.Vector
-
-  def hybridEq[A](d: Buffer[A], s: IndexedSeq[A]): Boolean =
+  def hybridEq(d: Buffer[A], s: IndexedSeq[A]): Boolean =
     d.length == s.length && (0 until d.length).forall(i => d(i) == s(i))
 
   property("unsafe") {

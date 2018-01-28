@@ -776,8 +776,8 @@ object Buffer extends LowPriorityBufferImplicits {
    */
   implicit def monoid[@sp A: ClassTag] =
     new Monoid[Buffer[A]] {
-      def id: Buffer[A] = Buffer.empty[A]
-      def op(lhs: Buffer[A], rhs: Buffer[A]): Buffer[A] = lhs ++ rhs
+      def empty: Buffer[A] = Buffer.empty[A]
+      def combine(lhs: Buffer[A], rhs: Buffer[A]): Buffer[A] = lhs ++ rhs
     }
 
   /**
@@ -786,8 +786,8 @@ object Buffer extends LowPriorityBufferImplicits {
    */
   def pairwiseMonoid[@sp A: ClassTag: Monoid] =
     new Monoid[Buffer[A]] {
-      def id: Buffer[A] = Buffer.empty[A]
-      def op(lhs: Buffer[A], rhs: Buffer[A]): Buffer[A] =
+      def empty: Buffer[A] = Buffer.empty[A]
+      def combine(lhs: Buffer[A], rhs: Buffer[A]): Buffer[A] =
         if (lhs.length >= rhs.length) {
           val out = lhs.copy
           cfor(0)(_ < rhs.elems.length, _ + 1) { i =>

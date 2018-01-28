@@ -1,69 +1,85 @@
 package debox.benchmark
 
-import scala.{specialized => spec}
 import scala.collection.mutable.ArrayBuffer
-import scala.util.Random._
+import scala.util.Random.nextLong
 
 import spire.syntax.cfor._
 import debox._
 
-import com.google.caliper.Param
+import org.openjdk.jmh.annotations._
 
-object BufferBenchmarks extends MyRunner(classOf[BufferBenchmarks])
+object BufferBenchmark {
 
-class BufferBenchmarks extends MyBenchmark {
-  @Param(Array("8", "11", "14", "17", "20"))
-  var pow: Int = 0
+  @State(Scope.Benchmark)
+  class BenchmarkState {
 
-  var data: Array[Long] = null
-  var abuf: ArrayBuffer[Long] = null
-  var sbuf: Buffer[Long] = null
+    @Param(Array("8", "11", "14", "17", "20"))
+    var pow: Int = 0
 
-  override protected def setUp() {
-    val n = scala.math.pow(2, pow).toInt
-    data = init(n)(nextLong)
-    abuf = ArrayBuffer(data: _*)
-    sbuf = Buffer.fromArray(data)
+    var data: Array[Long] = _
+    var abuf: ArrayBuffer[Long] = _
+    var sbuf: Buffer[Long] = _
+
+    @Setup(Level.Trial)
+    def setup(): Unit = {
+      val n = scala.math.pow(2, pow.toDouble).toInt
+      data = init(n)(nextLong)
+      abuf = ArrayBuffer(data: _*)
+      sbuf = Buffer.fromArray(data)
+    }
   }
+}
 
-  def timeAppendArrayBuffer(reps: Int) = run(reps) {
+class BufferBenchmark {
+
+  import BufferBenchmark.BenchmarkState
+
+  @Benchmark
+  def timeAppendArrayBuffer(st: BenchmarkState) = {
+    val data = st.data
     val bf = scala.collection.mutable.ArrayBuffer.empty[Long]
     cfor(0)(_ < data.length, _ + 1) { i => bf.append(data(i)) }
     bf.length
   }
 
-  def timeAppendDeboxBuffer(reps: Int) = run(reps) {
+  def timeAppendDeboxBuffer(st: BenchmarkState) = {
+    val data = st.data
     val bf = Buffer.empty[Long]
     cfor(0)(_ < data.length, _ + 1) { i => bf.append(data(i)) }
     bf.length
   }
 
-  def timeRemoveArrayBuffer(reps: Int) = run(reps) {
+  def timeRemoveArrayBuffer(st: BenchmarkState) = {
+    val abuf = st.abuf
     val bf = abuf.clone
     while (bf.nonEmpty) bf.remove(bf.length - 1)
     bf.length
   }
 
-  def timeRemoveDeboxBuffer(reps: Int) = run(reps) {
+  def timeRemoveDeboxBuffer(st: BenchmarkState) = {
+    val sbuf = st.sbuf
     val bf = sbuf.copy
     while (bf.nonEmpty) bf.remove(bf.length - 1)
     bf.length
   }
 
-  def timeForeachArrayBuffer(reps: Int) = run(reps) {
+  def timeForeachArrayBuffer(st: BenchmarkState) = {
+    val abuf = st.abuf
     var t = 0L; abuf.foreach(t += _); t
   }
 
-  def timeForeachDeboxBuffer(reps: Int) = run(reps) {
+  def timeForeachDeboxBuffer(st: BenchmarkState) = {
+    val sbuf = st.sbuf
     var t = 0L; sbuf.foreach(t += _); t
   }
 
-  def timeForeachArray(reps: Int) = run(reps) {
+  def timeForeachArray(st: BenchmarkState) = {
+    val data = st.data
     var t = 0L; data.foreach(t += _); t
   }
 
-  def timeWhileArrayBuffer(reps: Int) = run(reps)(whileArrayBuffer)
-  def whileArrayBuffer: Long = {
+  def timeWhileArrayBuffer(st: BenchmarkState) = {
+    val abuf = st.abuf
     var i = 0
     val len = abuf.length
     var total = 0L
@@ -74,8 +90,8 @@ class BufferBenchmarks extends MyBenchmark {
     total
   }
 
-  def timeWhileDeboxBuffer(reps: Int) = run(reps)(whileDeboxBuffer)
-  def whileDeboxBuffer: Long = {
+  def timeWhileDeboxBuffer(st: BenchmarkState) = {
+    val sbuf = st.sbuf
     var i = 0
     val len = sbuf.length
     var total = 0L
@@ -86,8 +102,8 @@ class BufferBenchmarks extends MyBenchmark {
     total
   }
 
-  def timeWhileArray(reps: Int) = run(reps)(whileArray)
-  def whileArray: Long = {
+  def timeWhileArray(st: BenchmarkState) = {
+    val data = st.data
     var i = 0
     val len = data.length
     var total = 0L

@@ -1,12 +1,8 @@
 package debox
 
-import org.scalatest.matchers.ShouldMatchers
 import org.scalatest._
 import prop._
-import org.scalacheck.Arbitrary._
 import org.scalacheck._
-import Gen._
-import Arbitrary.arbitrary
 
 import spire.algebra.Order
 import spire.std.any._
@@ -14,13 +10,13 @@ import spire.std.any._
 import scala.collection.mutable
 import scala.reflect._
 
-abstract class SetCheck[A: Arbitrary: ClassTag: Order]
+abstract class SetCheck[A: Arbitrary: ClassTag: Cogen: Order]
     extends PropSpec with Matchers with GeneratorDrivenPropertyChecks {
 
   import scala.collection.immutable.Set
   import debox.{Set => DSet, Map => DMap}
 
-  def hybridEq[A](d: DSet[A], s: mutable.Set[A]): Boolean =
+  def hybridEq(d: DSet[A], s: mutable.Set[A]): Boolean =
     d.size == s.size && d.forall(s.contains)
 
   property("fromArray") {

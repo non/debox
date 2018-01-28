@@ -1,29 +1,25 @@
 package debox
 
-import org.scalatest.matchers.ShouldMatchers
 import org.scalatest._
 import prop._
-import org.scalacheck.Arbitrary._
+
 import org.scalacheck._
-import Gen._
-import Arbitrary.arbitrary
 
 import scala.collection.mutable
 import scala.reflect._
-import scala.{specialized => sp}
 
-import spire.algebra.{CMonoid, Rig, Ring}
+import spire.algebra.{CMonoid, Ring}
 import spire.std.any._
 import spire.syntax.monoid._
 
-abstract class MapCheck[A: Arbitrary: ClassTag, B: Arbitrary: ClassTag: CMonoid]
+abstract class MapCheck[A: Arbitrary: ClassTag: Cogen, B: Arbitrary: ClassTag: Cogen: CMonoid]
     extends PropSpec with Matchers with GeneratorDrivenPropertyChecks {
 
   import scala.collection.immutable.Set
   import scala.collection.immutable.Map
   import debox.{Map => DMap, Set => DSet}
 
-  def hybridEq[A](d: DMap[A, B], s: mutable.Map[A, B]): Boolean =
+  def hybridEq(d: DMap[A, B], s: mutable.Map[A, B]): Boolean =
     d.size == s.size && s.forall { case (k, v) => d.get(k) == Some(v) }
 
   property("fromArrays") {
@@ -102,7 +98,7 @@ abstract class MapCheck[A: Arbitrary: ClassTag, B: Arbitrary: ClassTag: CMonoid]
     forAll { kvs: Map[A, B] =>
       val map = DMap.fromIterable(kvs)
       val control = mutable.Map(kvs.toSeq: _*)
-      kvs.foreach { case (k, v) =>
+      kvs.foreach { case (k, _) =>
         map.remove(k)
         control -= k
         map.contains(k) shouldBe false
@@ -181,13 +177,21 @@ abstract class MapCheck[A: Arbitrary: ClassTag, B: Arbitrary: ClassTag: CMonoid]
   }
 
   property("mapItemsToMap") {
+
+    // import Arbitrary.arbitrary
+    // implicit val arbf2: Arbitrary[(A, B) => (A, B)] =
+    //   Arbitrary(for {
+    //     f <- arbitrary[(A, B) => A]
+    //     g <- arbitrary[(A, B) => B]
+    //   } yield (a, b) => (f(a, b), g(a, b)))
+
     forAll { (kvs: Map[A, B], f: (A, B) => (A, B)) =>
       val m = DMap.fromIterable(kvs)
       m.mapToSet((a, b) => b) shouldBe DSet.fromArray(m.valuesArray)
 
       val kvs2 = kvs.foldLeft(Map.empty[A, B]) { case (m, (a, b)) =>
         val (aa, bb1) = f(a, b)
-        val bb2 = m.getOrElse(aa, CMonoid[B].id)
+        val bb2 = m.getOrElse(aa, CMonoid[B].empty)
         m.updated(aa, bb1 |+| bb2)
       }
       
@@ -202,7 +206,7 @@ abstract class MapCheck[A: Arbitrary: ClassTag, B: Arbitrary: ClassTag: CMonoid]
 
       val kvs2 = kvs.foldLeft(Map.empty[A, B]) { case (m, (a, b)) =>
         val aa = f(a)
-        val bb = m.getOrElse(aa, CMonoid[B].id)
+        val bb = m.getOrElse(aa, CMonoid[B].empty)
         m.updated(aa, bb |+| b)
       }
 
@@ -238,14 +242,14 @@ object Impl {
 
   // argh, why? (i guess CRig doesn't exist)
   implicit val cmboolean: CMonoid[Boolean] = new CMonoid[Boolean] {
-    def id: Boolean = false
-    def op(lhs: Boolean, rhs: Boolean): Boolean = lhs || rhs
+    def empty: Boolean = false
+    def combine(lhs: Boolean, rhs: Boolean): Boolean = lhs || rhs
   }
 
   // junky but law-abiding
   implicit val cmstring: CMonoid[String] = new CMonoid[String] {
-    def id: String = ""
-    def op(lhs: String, rhs: String): String = if (lhs > rhs) lhs else rhs
+    def empty: String = ""
+    def combine(lhs: String, rhs: String): String = if (lhs > rhs) lhs else rhs
   }
 }
 

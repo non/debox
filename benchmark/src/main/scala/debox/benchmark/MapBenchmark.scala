@@ -1,7 +1,5 @@
 package debox.benchmark
 
-import scala.reflect.ClassTag
-import scala.{specialized => spec}
 import scala.collection.mutable
 import scala.util.Random._
 
@@ -23,8 +21,8 @@ class MapBenchmarks extends MyBenchmark {
   var javaMap: java.util.HashMap[Int, Double] = null
   var deboxMap: debox.Map[Int, Double] = null
 
-  override protected def setUp() {
-    val n = scala.math.pow(2, pow).toInt
+  override protected def setUp(): Unit = {
+    val n = scala.math.pow(2, pow.toDouble).toInt
 
     keys = init(n)(nextInt)
     vals = init(n)(nextDouble)
@@ -64,10 +62,10 @@ class MapBenchmarks extends MyBenchmark {
   def timeForeachScalaMap(reps: Int) = run(reps) {
     var ks = 0
     var vs = 0.0
-    scalaMap.foreach{case (k,v) => ks += k * 3}
-    scalaMap.foreach{case (k,v) => vs += v * 3}
-    scalaMap.foreach{case (k,v) => { ks -= k; vs -= 2 * v }}
-    scalaMap.foreach{case (k,v) => { ks -= 2 * k; vs -= v }}
+    scalaMap.foreach{ case (k, _) => ks += k * 3 }
+    scalaMap.foreach{ case (_, v) => vs += v * 3 }
+    scalaMap.foreach{ case (k, v) => { ks -= k; vs -= 2 * v } }
+    scalaMap.foreach{ case (k, v) => { ks -= 2 * k; vs -= v } }
     (ks, vs)
   }
 
