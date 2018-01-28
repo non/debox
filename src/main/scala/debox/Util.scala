@@ -25,7 +25,7 @@ object Util {
    *
    * This method does not do any size or bounds checking.
    */
-  def alloc[@sp A: ClassTag](src: Array[A], offset: Int, len: Int) = {
+  def alloc[@sp A: ClassTag](src: Array[A], offset: Int, len: Int): Array[A] = {
     val as = new Array[A](len)
     System.arraycopy(src, offset, as, 0, len)
     as

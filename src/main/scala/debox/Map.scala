@@ -211,7 +211,8 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
    *
    * This is an O(n) operation.
    */
-  final def copy: Map[A, B] = new Map(keys.clone, vals.clone, buckets.clone, len, used)
+  final def copy(): Map[A, B] =
+    new Map(keys.clone, vals.clone, buckets.clone, len, used)
 
   /**
    * Clears the map's internal state.
@@ -790,7 +791,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
    * On average, this is an O(n) operation, although false results may
    * be returned more quickly.
    */
-  def forall(p: (A, B) => Boolean) =
+  def forall(p: (A, B) => Boolean): Boolean =
     loopWhile(p) == -1
 
   /**
@@ -802,7 +803,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
    * On average, this is an O(n) operation, although true results may
    * be returned more quickly.
    */
-  def exists(p: (A, B) => Boolean) =
+  def exists(p: (A, B) => Boolean): Boolean =
     loopUntil(p) != -1
 
   /**
@@ -887,7 +888,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
    *
    * Creating the iterator is an O(1) operation.
    */
-  def iterator: Iterator[(A, B)] = {
+  def iterator(): Iterator[(A, B)] = {
     var i = 0
     while (i < buckets.length && buckets(i) != 3) i += 1
     new Iterator[(A, B)] {
@@ -935,7 +936,7 @@ object Map {
    * underlying array to be. In most cases ofSize() is probably what
    * you want instead.
    */
-  private[debox] def ofAllocatedSize[@sp(Int, Long, AnyRef) A: ClassTag, @sp B: ClassTag](n: Int) = {
+  private[debox] def ofAllocatedSize[@sp(Int, Long, AnyRef) A: ClassTag, @sp B: ClassTag](n: Int): Map[A, B] = {
     val sz = Util.nextPowerOfTwo(n) match {
       case n if n < 0 => throw DeboxOverflowError(n)
       case 0 => 8
@@ -991,7 +992,7 @@ object Map {
    * Since Maps are so reliant on equality, and use hash codes
    * internally, the default equality is used to compare elements.
    */
-  implicit def eqv[A, B] =
+  implicit def eqv[A, B]: Eq[Map[A, B]] =
     new Eq[Map[A, B]] {
       def eqv(lhs: Map[A, B], rhs: Map[A, B]): Boolean = lhs == rhs
     }
@@ -1002,7 +1003,7 @@ object Map {
    * The maps are combined key-by-key, using |+| to merge values if
    * necessary.
    */
-  implicit def monoid[@sp A: ClassTag, @sp B: ClassTag: Monoid] =
+  implicit def monoid[@sp A: ClassTag, @sp B: ClassTag: Monoid]: Monoid[Map[A, B]] =
     new Monoid[Map[A, B]] {
       def empty: Map[A, B] = Map.empty[A, B]
       def combine(lhs: Map[A, B], rhs: Map[A, B]): Map[A, B] = lhs ++ rhs
@@ -1014,7 +1015,7 @@ object Map {
    * The maps are combined key-by-key, using + to merge values if
    * necessary.
    */
-  implicit def additiveMonoid[@sp A: ClassTag, @sp B: ClassTag: AdditiveMonoid] =
+  implicit def additiveMonoid[@sp A: ClassTag, @sp B: ClassTag: AdditiveMonoid]: AdditiveMonoid[Map[A, B]] =
     new AdditiveMonoid[Map[A, B]] {
       implicit val m: Monoid[B] = implicitly[AdditiveMonoid[B]].additive
       def zero: Map[A, B] = Map.empty[A, B]
@@ -1027,7 +1028,7 @@ object Map {
    * The maps are combined key-by-key, using * to merge values if
    * necessary.
    */
-  implicit def multiplicativeMonoid[@sp A: ClassTag, @sp B: ClassTag: MultiplicativeMonoid] =
+  implicit def multiplicativeMonoid[@sp A: ClassTag, @sp B: ClassTag: MultiplicativeMonoid]: MultiplicativeMonoid[Map[A, B]] =
     new MultiplicativeMonoid[Map[A, B]] {
       implicit val m: Monoid[B] = implicitly[MultiplicativeMonoid[B]].multiplicative
       def one: Map[A, B] = Map.empty[A, B]

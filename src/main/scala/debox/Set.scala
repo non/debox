@@ -9,7 +9,7 @@ import spire.syntax.all._
 
 /**
  * Set is a mutable hash set, with open addressing and double hashing.
- * 
+ *
  * Set provides constant-time membership tests, and amortized
  * constant-time addition and removal. One underlying array stores
  * items, and another tracks which buckets are used and defined.
@@ -31,39 +31,40 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Check if two Sets are equal.
-   * 
+   *
    * Equal means the sets have the same type (which is checked
    * using the ClassTag instances) and the same contents.
-   * 
+   *
    * Comparing Sets with any of Scala's collection types will
    * return false.
-   * 
+   *
    * On average this is an O(n) operation. In some cases a false
    * result can be returned more quickly.
    */
-  override def equals(that: Any): Boolean = that match {
-    case that: Set[_] =>
-      if (size != that.size || ct != that.ct) return false
-      val s = that.asInstanceOf[Set[A]]
-      forall(s.apply)
-    case _ =>
-      false
-  }
+  override def equals(that: Any): Boolean =
+    that match {
+      case that: Set[_] =>
+        if (size != that.size || ct != that.ct) return false
+        val s = that.asInstanceOf[Set[A]]
+        forall(s.apply)
+      case _ =>
+        false
+    }
 
   /**
    * Hash the contents of the set to an Int value.
-   * 
+   *
    * By xor'ing all the set's values together, we can be sure that
    * sets with the same contents will have the same hashCode
    * regardless of the order those elements appear.
-   * 
+   *
    * This is an O(n) operation.
    */
   override def hashCode: Int = fold(0xdeadd065)(_ ^ _.##)
 
   /**
    * Return a string representation of the contents of the set.
-   * 
+   *
    * This is an O(n) operation.
    */
   override def toString: String = {
@@ -88,31 +89,31 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Return the size of this Set as an Int.
-   * 
+   *
    * Since Sets use arrays, their size is limited to what a 32-bit
    * signed integer can represent.
-   * 
+   *
    * This is an O(1) operation.
    */
   final def size: Int = len
 
   /**
    * Return true if the Set is empty, false otherwise.
-   * 
+   *
    * This is an O(1) operation.
    */
   final def isEmpty: Boolean = len == 0
 
   /**
    * Return true if the Set is non-empty, false otherwise.
-   * 
+   *
    * This is an O(1) operation.
    */
   final def nonEmpty: Boolean = len > 0
 
   /**
    * Return whether the item is found in the Set or not.
-   * 
+   *
    * On average, this is an O(1) operation; the (unlikely) worst-case
    * is O(n).
    */
@@ -134,38 +135,38 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Make a (shallow) copy of this set.
-   * 
+   *
    * This method creates a copy of the set with the same
    * structure. However, the actual elements will not be copied.
-   * 
+   *
    * This is an O(n) operation.
    */
-  final def copy: Set[A] = new Set(items.clone, buckets.clone, len, used)
+  final def copy(): Set[A] = new Set(items.clone, buckets.clone, len, used)
 
   /**
    * Clears the set's internal state.
-   * 
+   *
    * After calling this method, the set's state is identical to that
    * obtained by calling Set.empty[A].
-   * 
+   *
    * The previous arrays are not retained, and will become available
    * for garbage collection. This method returns a null of type
    * Unit1[A] to trigger specialization without allocating an actual
    * instance.
-   * 
+   *
    * This is an O(1) operation, but may generate a lot of garbage if
    * the set was previously large.
    */
-  final def clear: Unit1[A] = { absorb(Set.empty[A]); null }
+  final def clear(): Unit1[A] = { absorb(Set.empty[A]); null }
 
   /**
    * Aborb the given set's contents into this set.
-   * 
+   *
    * This method does not copy the other set's contents. Thus, this
    * should only be used when there are no saved references to the
    * other set. It is private, and exists primarily to simplify the
    * implementation of certain methods.
-   * 
+   *
    * This is an O(1) operation, although it can potentially generate a
    * lot of garbage (if the set was previously large).
    */
@@ -185,10 +186,10 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Add item to the set.
-   * 
+   *
    * Returns whether or not the item was added. If item was already in
    * the set, this method will do nothing and return false.
-   * 
+   *
    * On average, this is an amortized O(1) operation; the worst-case
    * is O(n), which will occur when the set must be resized.
    */
@@ -235,7 +236,7 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Add every item in items to the set.
-   * 
+   *
    * This is an O(n) operation, where n is the size of items.
    */
   def ++=(items: Iterable[A]): Unit =
@@ -243,7 +244,7 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Add every item in items to the set.
-   * 
+   *
    * This is an O(n) operation, where n is the size of items.
    */
   def ++=(buf: Buffer[A]): Unit =
@@ -251,7 +252,7 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Add every item in items to the set.
-   * 
+   *
    * This is an O(n) operation, where n is the size of items.
    */
   def ++=(arr: Array[A]): Unit =
@@ -264,9 +265,9 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Remove an item from the set.
-   * 
+   *
    * Returns whether the item was originally in the set or not.
-   * 
+   *
    * This is an amortized O(1) operation.
    */
   final def -=(item: A): Boolean = {
@@ -289,7 +290,7 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Set/unset the value of item in the set.
-   * 
+   *
    * Like += and -= this is an amortized O(1) operation.
    */
   final def update(item: A, b: Boolean) =
@@ -297,11 +298,11 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Loop over the set's contents, appying f to each element.
-   * 
+   *
    * There is no guaranteed order that the set's elements will be
    * traversed in, so use of foreach should not rely on a particular
    * order.
-   * 
+   *
    * This is an O(n) operation, where n is the length of the buffer.
    */
   def foreach(f: A => Unit): Unit =
@@ -311,10 +312,10 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Translate this Set into another Set using the given function f.
-   * 
+   *
    * Note that the resulting set may be smaller than this set, if f is
    * not a one-to-one function (an injection).
-   * 
+   *
    * This is an O(n) operation, where n is the size of the set.
    */
   def map[@sp(Short, Char, Int, Float, Long, Double, AnyRef) B: ClassTag](f: A => B): Set[B] = {
@@ -329,10 +330,10 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
   /**
    * Fold the set's values into a single value, using the provided
    * initial state and combining function f.
-   * 
+   *
    * Like foreach, fold makes no guarantees about the order that
    * elements will be reached.
-   * 
+   *
    * This is an O(n) operation, where n is the size of the set.
    */
   def fold[@sp(Int, Long, Double, AnyRef) B](init: B)(f: (B, A) => B): B = {
@@ -345,19 +346,19 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Grow the underlying array to best accomodate the set's size.
-   * 
+   *
    * To preserve hashing access speed, the set's size should never be
    * more than 66% of the underlying array's size. When this size is
    * reached, the set needs to be updated (using this method) to have a
    * larger array.
-   * 
+   *
    * The underlying array's size must always be a multiple of 2, which
    * means this method grows the array's size by 2x (or 4x if the set
    * is very small). This doubling helps amortize the cost of
    * resizing, since as the set gets larger growth will happen less
    * frequently. This method returns a null of type Unit1[A] to
    * trigger specialization without allocating an actual instance.
-   * 
+   *
    * Growing is an O(n) operation, where n is the set's size.
    */
   final def grow(): Unit1[A] = {
@@ -372,15 +373,15 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Compacts the set's internal arrays to reduce memory usage.
-   * 
+   *
    * This operation should be used if a set has been shrunk
    * (e.g. through --=) and is not likely to grow again.
-   * 
+   *
    * This method will shrink the set to the smallest possible size
    * that allows it to be <66% full. It returns a null of type
    * Unit1[A] to trigger specialization without allocating an actual
    * instance.
-   * 
+   *
    * This is an O(n) operation, where n it the set's size.
    */
   final def compact(): Unit1[A] = {
@@ -406,9 +407,9 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Union this set with the rhs set.
-   * 
+   *
    * This has the effect of adding all members of rhs to lhs.
-   * 
+   *
    * This is an O(n) operation, where n is rhs.size.
    */
   def |=(rhs: Set[A]): Unit =
@@ -429,9 +430,9 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Return new set which is the union of lhs and rhs.
-   * 
+   *
    * The new set will contain all members of lhs and rhs.
-   * 
+   *
    * This is an O(m max n) operation, where m and n are the sizes of
    * the sets.
    */
@@ -448,7 +449,7 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Remove any member of this which is not in rhs.
-   * 
+   *
    * This is an O(m min n) operation, where m and n are the sizes of
    * the lhs and rhs sets.
    */
@@ -473,9 +474,9 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Intersect this set with the rhs set.
-   * 
+   *
    * This has the effect of removing any item not in rhs.
-   * 
+   *
    * This is an O(m min n) operation, where m and n are the sizes of
    * the lhs and rhs sets.
    */
@@ -492,7 +493,7 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Remove members of rhs from the set.
-   * 
+   *
    * This operation is an O(m min n) operation, where m and n are the
    * sizes of the lhs and rhs sets.
    */
@@ -512,7 +513,7 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Remove the members of items from the set.
-   * 
+   *
    * This is an O(n) operation, where n is the length of items.
    */
   def --=(items: Iterable[A]): Unit =
@@ -520,7 +521,7 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Remove the members of arr from the set.
-   * 
+   *
    * This is an O(n) operation, where n is the length of arr.
    */
   def --=(arr: Array[A]): Unit =
@@ -528,7 +529,7 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Remove the members of buf from the set.
-   * 
+   *
    * This is an O(n) operation, where n is the length of buf.
    */
   def --=(buf: Buffer[A]): Unit =
@@ -541,7 +542,7 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Create a new set with the elements of lhs that are not in rhs.
-   * 
+   *
    * This is an O(n) operation, where n is the size of the set.
    */
   def --(rhs: Set[A]): Set[A] = {
@@ -549,10 +550,10 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
     out --= rhs
     out
   }
-  
+
   /**
    * Count how many elements of the set satisfy the predicate p.
-   * 
+   *
    * This is an O(n) operation, where n is the size of the set.
    */
   def count(p: A => Boolean): Int =
@@ -560,7 +561,7 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Determine if every member of the set satisifes the predicate p.
-   * 
+   *
    * This is an O(n) operation, where n is the size of the
    * set. However, it will return as soon as a false result is
    * obtained.
@@ -574,7 +575,7 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Determine if any member of the set satisifes the predicate p.
-   * 
+   *
    * This is an O(n) operation, where n is the size of the
    * set. However, it will return as soon as a true result is
    * obtained.
@@ -588,12 +589,12 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Find a member of the set that satisfies the predicate p.
-   * 
+   *
    * The method returns Some(item) if item satisfies p, and None if
    * none of set's elements satisfy p. Since Set is not ordered, if
    * multiple elements satisfy the predicate there is no guarantee
    * which one wil be found.
-   * 
+   *
    * This is an O(n) operation, where n is the size of the
    * set. However, it will return as soon as a member satisfying the
    * predicate is found.
@@ -611,7 +612,7 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
   /**
    * Create a new set containing all the members of this set that
    * satisfy p.
-   * 
+   *
    * This is an O(n) operation, where n is the size of the set.
    */
   def findAll(p: A => Boolean): Set[A] = {
@@ -624,9 +625,9 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Remove any member of the set that does not satisfy p.
-   * 
+   *
    * After this method, all membrers of the set will satisfy p.
-   * 
+   *
    * This is an O(n) operation, where n is the size of the set.
    */
   def filterSelf(p: A => Boolean): Unit =
@@ -641,7 +642,7 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
    * Partition this set into two new sets, the first consisting of all
    * members that fail to satisfy the predicate p, and the second for
    * all those that do satisfy the predicate.
-   * 
+   *
    * This is an O(n) operation, where n is the size of the set.
    */
   def partition(p: A => Boolean): (Set[A], Set[A]) = {
@@ -660,18 +661,18 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Return an iterator over this set's contents.
-   * 
+   *
    * This method does not do any copying or locking. Thus, if the set
    * is modified while the iterator is "live" the results will be
    * undefined and probably bad. Also, since sets are not ordered,
    * there is no guarantee elements will be returned in a particular
    * order.
-   * 
+   *
    * Use this.copy.iterator to get a "clean" iterator if needed.
-   * 
+   *
    * Creating the iterator is an O(1) operation.
    */
-  def iterator: Iterator[A] = {
+  def iterator(): Iterator[A] = {
     var i = 0
     while (i < buckets.length && buckets(i) != 3) i += 1
     new Iterator[A] {
@@ -688,10 +689,10 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Copy the set's elements into an array.
-   * 
+   *
    * This is an O(n) operation, where n is the size of the set.
    */
-  def toArray: Array[A] = {
+  def toArray(): Array[A] = {
     val arr = new Array[A](size)
     var j = 0
     cfor(0)(_ < buckets.length, _ + 1) { i =>
@@ -705,16 +706,16 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Copy the set's elements into a buffer.
-   * 
+   *
    * This is an O(n) operation, where n is the size of the set.
    */
-  def toBuffer: Buffer[A] = Buffer.fromArray(toArray)
+  def toBuffer(): Buffer[A] = Buffer.fromArray(toArray)
 
   /**
    * Copy the set's elements into a sorted buffer.
-   * 
+   *
    * Elements will be arranged from lowest-to-highest.
-   * 
+   *
    * This is an O(n) operation, where n is the size of the set.
    */
   def toSortedBuffer(implicit o: Order[A]): Buffer[A] = {
@@ -727,7 +728,7 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
    * Copy the sets contents into a Map. The elements of the set will
    * be keys, and each keys' value will be determined with the
    * provided function.
-   * 
+   *
    * This is an O(n) operation, where n is the size of the set.
    */
   def toMap[@sp(Boolean, Int, Long, Double) B: ClassTag](f: A => B): Map[A, B] = {
@@ -743,23 +744,23 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Wrap this set in an Iterable[A] instance.
-   * 
+   *
    * This method exists as a cheap way to get compatibility with Scala
    * collections without copying/conversion. Note that since Scala
    * collections are not specialized, using this iterable will box
    * values as they are accessed (although the underlying set will
    * still be unboxed).
-   * 
+   *
    * Like iterator, this method directly wraps the set. Thus, you
    * should not mutate the set while using the resulting iterable, or
    * risk corruption and undefined behavior.
-   * 
+   *
    * To get a "safe" value that is compatible with Scala collections,
    * consider using toScalaSet.
-   * 
+   *
    * Creating the Iterable[A] instance is an O(1) operation.
    */
-  def toIterable: Iterable[A] =
+  def toIterable(): Iterable[A] =
     new Iterable[A] {
       override def size: Int = lhs.size
       def iterator: Iterator[A] = lhs.iterator
@@ -768,13 +769,13 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
 
   /**
    * Create an immutable instance of scala's Set[A].
-   * 
+   *
    * This method copies the elements into a new instance which is
    * compatible with Scala's collections and Set[A] type.
-   * 
+   *
    * This is an O(n) operation, where n is the size of the set.
    */
-  def toScalaSet: scala.collection.immutable.Set[A] =
+  def toScalaSet(): scala.collection.immutable.Set[A] =
     iterator.toSet
 
 }
@@ -785,26 +786,27 @@ object Set {
   /**
    * Allocate an empty Set.
    */
-  def empty[@sp A: ClassTag] = new Set(new Array[A](8), new Array[Byte](8), 0, 0)
+  def empty[@sp A: ClassTag]: Set[A] =
+    new Set(new Array[A](8), new Array[Byte](8), 0, 0)
 
   /**
    * Allocate an empty Set, capable of holding n items without
    * resizing itself.
-   * 
+   *
    * This method is useful if you know you'll be adding a large number
    * of elements in advance and you want to save a few resizes.
    */
-  def ofSize[@sp A: ClassTag](n: Int) =
+  def ofSize[@sp A: ClassTag](n: Int): Set[A] =
     ofAllocatedSize(n / 2 * 3)
 
   /**
    * Allocate an empty Set, with underlying storage of size n.
-   * 
+   *
    * This method is useful if you know exactly how big you want the
    * underlying array to be. In most cases ofSize() is probably what
    * you want instead.
    */
-  private[debox] def ofAllocatedSize[@sp A: ClassTag](n: Int) = {
+  private[debox] def ofAllocatedSize[@sp A: ClassTag](n: Int): Set[A] = {
     val sz = Util.nextPowerOfTwo(n) match {
       case n if n < 0 => throw DeboxOverflowError(n)
       case 0 => 8
@@ -820,7 +822,7 @@ object Set {
 
   /**
    * Build a Set from the provided array.
-   * 
+   *
    * The advantage of using this method is that, unlike apply() or
    * fromIterable(), the values will not be boxed prior to the set
    * being built.
@@ -843,22 +845,22 @@ object Set {
 
   /**
    * Provide a Eq[Set[A]] instance.
-   * 
+   *
    * Since Sets are so reliant on equality, and use hash codes
    * internally, the default equality is used to compare elements.
    */
-  implicit def eqv[A] =
+  implicit def eqv[A]: Eq[Set[A]] =
     new Eq[Set[A]] {
       def eqv(lhs: Set[A], rhs: Set[A]): Boolean = lhs == rhs
     }
 
   /**
    * Provide a CMonoid[Set[A]] instance.
-   * 
+   *
    * Since element order is irrelevant, union is a commutative
    * operation. The empty set is the identity element.
    */
-  implicit def cmonoid[@sp A: ClassTag] =
+  implicit def cmonoid[@sp A: ClassTag]: CMonoid[Set[A]] =
     new CMonoid[Set[A]] {
       def empty = Set.empty[A]
       def combine(lhs: Set[A], rhs: Set[A]): Set[A] = lhs | rhs
