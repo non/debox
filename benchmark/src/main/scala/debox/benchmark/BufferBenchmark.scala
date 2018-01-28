@@ -35,50 +35,57 @@ class BufferBenchmark {
   import BufferBenchmark.BenchmarkState
 
   @Benchmark
-  def timeAppendArrayBuffer(st: BenchmarkState) = {
+  def appendArrayBuffer(st: BenchmarkState) = {
     val data = st.data
     val bf = scala.collection.mutable.ArrayBuffer.empty[Long]
     cfor(0)(_ < data.length, _ + 1) { i => bf.append(data(i)) }
     bf.length
   }
 
-  def timeAppendDeboxBuffer(st: BenchmarkState) = {
+  @Benchmark
+  def appendDeboxBuffer(st: BenchmarkState) = {
     val data = st.data
     val bf = Buffer.empty[Long]
     cfor(0)(_ < data.length, _ + 1) { i => bf.append(data(i)) }
     bf.length
   }
 
-  def timeRemoveArrayBuffer(st: BenchmarkState) = {
+  @Benchmark
+  def removeArrayBuffer(st: BenchmarkState) = {
     val abuf = st.abuf
     val bf = abuf.clone
     while (bf.nonEmpty) bf.remove(bf.length - 1)
     bf.length
   }
 
-  def timeRemoveDeboxBuffer(st: BenchmarkState) = {
+  @Benchmark
+  def removeDeboxBuffer(st: BenchmarkState) = {
     val sbuf = st.sbuf
     val bf = sbuf.copy
     while (bf.nonEmpty) bf.remove(bf.length - 1)
     bf.length
   }
 
-  def timeForeachArrayBuffer(st: BenchmarkState) = {
+  @Benchmark
+  def foreachArrayBuffer(st: BenchmarkState) = {
     val abuf = st.abuf
     var t = 0L; abuf.foreach(t += _); t
   }
 
-  def timeForeachDeboxBuffer(st: BenchmarkState) = {
+  @Benchmark
+  def foreachDeboxBuffer(st: BenchmarkState) = {
     val sbuf = st.sbuf
     var t = 0L; sbuf.foreach(t += _); t
   }
 
-  def timeForeachArray(st: BenchmarkState) = {
+  @Benchmark
+  def foreachArray(st: BenchmarkState) = {
     val data = st.data
     var t = 0L; data.foreach(t += _); t
   }
 
-  def timeWhileArrayBuffer(st: BenchmarkState) = {
+  @Benchmark
+  def whileArrayBuffer(st: BenchmarkState) = {
     val abuf = st.abuf
     var i = 0
     val len = abuf.length
@@ -90,7 +97,8 @@ class BufferBenchmark {
     total
   }
 
-  def timeWhileDeboxBuffer(st: BenchmarkState) = {
+  @Benchmark
+  def whileDeboxBuffer(st: BenchmarkState) = {
     val sbuf = st.sbuf
     var i = 0
     val len = sbuf.length
@@ -102,7 +110,8 @@ class BufferBenchmark {
     total
   }
 
-  def timeWhileArray(st: BenchmarkState) = {
+  @Benchmark
+  def whileArray(st: BenchmarkState) = {
     val data = st.data
     var i = 0
     val len = data.length

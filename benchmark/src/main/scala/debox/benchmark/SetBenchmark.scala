@@ -56,7 +56,7 @@ class SetBenchmark {
   import SetBenchmark.BenchmarkState
 
   @Benchmark
-  def timeBuildScalaSet(st: BenchmarkState) = {
+  def buildScalaSet(st: BenchmarkState) = {
     val data = st.data
     val s = mutable.Set.empty[Long]
     cfor(0)(_ < data.length, _ + 1) { i => s.add(data(i)) }
@@ -64,7 +64,7 @@ class SetBenchmark {
   }
 
   @Benchmark
-  def timeBuildJavaSet(st: BenchmarkState) = {
+  def buildJavaSet(st: BenchmarkState) = {
     val data = st.data
     val s = new java.util.HashSet[Long]
     cfor(0)(_ < data.length, _ + 1) { i => s.add(data(i)) }
@@ -72,7 +72,7 @@ class SetBenchmark {
   }
 
   @Benchmark
-  def timeBuildDeboxSet(st: BenchmarkState) = {
+  def buildDeboxSet(st: BenchmarkState) = {
     val data = st.data
     val s = debox.Set.empty[Long]
     cfor(0)(_ < data.length, _ + 1) { i => s += data(i) }
@@ -80,7 +80,7 @@ class SetBenchmark {
   }
 
   @Benchmark
-  def timeUnbuildScalaSet(st: BenchmarkState) = {
+  def unbuildScalaSet(st: BenchmarkState) = {
     val data = st.data
     val scalaSet = st.scalaSet
     val s = scalaSet.clone
@@ -89,7 +89,7 @@ class SetBenchmark {
   }
 
   @Benchmark
-  def timeUnbuildJavaSet(st: BenchmarkState) = {
+  def unbuildJavaSet(st: BenchmarkState) = {
     val data = st.data
     val s = st.javaSet.clone.asInstanceOf[java.util.HashSet[Long]]
     cfor(0)(_ < data.length, _ + 1) { i => s.remove(data(i)) }
@@ -97,15 +97,15 @@ class SetBenchmark {
   }
 
   @Benchmark
-  def timeUnbuildDeboxSet(st: BenchmarkState) = {
+  def unbuildDeboxSet(st: BenchmarkState) = {
     val data = st.data
     val s = st.deboxSet.copy
     cfor(0)(_ < data.length, _ + 1) { i => s -= data(i) }
     s.size
   }
-  
+
   @Benchmark
-  def timeForeachScalaSet(st: BenchmarkState) = {
+  def foreachScalaSet(st: BenchmarkState) = {
     val scalaSet = st.scalaSet
     var t = 0L
     scalaSet.foreach(t += 4 * _)
@@ -116,7 +116,7 @@ class SetBenchmark {
   }
 
   @Benchmark
-  def timeForeachJavaSet(st: BenchmarkState) = {
+  def foreachJavaSet(st: BenchmarkState) = {
     val javaSet = st.javaSet
     var t = 0L
     val it1 = javaSet.iterator; while (it1.hasNext) { t += 4 * it1.next }
@@ -127,7 +127,7 @@ class SetBenchmark {
   }
 
   @Benchmark
-  def timeForeachDeboxSet(st: BenchmarkState) = {
+  def foreachDeboxSet(st: BenchmarkState) = {
     val deboxSet = st.deboxSet
     var t = 0L
     deboxSet.foreach(t += 4 * _)
@@ -136,7 +136,7 @@ class SetBenchmark {
     // deboxSet.foreach(t -= 2 * _)
     t
   }
-  
+
   // contains benchmark
   @Benchmark
   def timeContainsScalaSet(st: BenchmarkState) = {
@@ -170,7 +170,7 @@ class SetBenchmark {
     cfor(0)(_ < data2.length, _ + 1) { i => if (deboxSet(data2(i))) t += 1 }
     t
   }
-  
+
   // map benchmark
   @Benchmark
   def timeMapScalaSet(st: BenchmarkState) = {
@@ -192,7 +192,7 @@ class SetBenchmark {
 
   // fold benchmark
   @Benchmark
-  def timeFoldScalaSet(st: BenchmarkState) = {
+  def foldScalaSet(st: BenchmarkState) = {
     val scalaSet = st.scalaSet
     val zmin = scalaSet.foldLeft(Long.MaxValue)((x, y) => if (y < x) y else x)
     val zmax = scalaSet.foldLeft(Long.MinValue)((x, y) => if (y > x) y else x)
@@ -201,7 +201,7 @@ class SetBenchmark {
   }
 
   @Benchmark
-  def timeFoldDeboxSet(st: BenchmarkState) = {
+  def foldDeboxSet(st: BenchmarkState) = {
     val deboxSet = st.deboxSet
     val zmin = deboxSet.fold(Long.MaxValue)((x, y) => if (y < x) y else x)
     val zmax = deboxSet.fold(Long.MinValue)((x, y) => if (y > x) y else x)
@@ -211,7 +211,7 @@ class SetBenchmark {
 
   // partition benchmark
   @Benchmark
-  def timePartitionScalaSet(st: BenchmarkState) = {
+  def partitionScalaSet(st: BenchmarkState) = {
     val scalaSet = st.scalaSet
     val a = scalaSet.partition(_ % 2 == 0)
     val b = scalaSet.partition(_ % 3 == 0)
@@ -220,7 +220,7 @@ class SetBenchmark {
   }
 
   @Benchmark
-  def timePartitionDeboxSet(st: BenchmarkState) = {
+  def partitionDeboxSet(st: BenchmarkState) = {
     val deboxSet = st.deboxSet
     val a = deboxSet.partition(_ % 2 == 0)
     val b = deboxSet.partition(_ % 3 == 0)

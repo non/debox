@@ -22,7 +22,7 @@ object Util {
   /**
    * Given a src array, an offset, and a len, return a new array which
    * copies the relevant area of src.
-   * 
+   *
    * This method does not do any size or bounds checking.
    */
   def alloc[@sp A: ClassTag](src: Array[A], offset: Int, len: Int) = {
@@ -32,7 +32,6 @@ object Util {
   }
 
   def bufferMacro[A: c.WeakTypeTag](c: Context)(as: c.Expr[A]*): c.Expr[debox.Buffer[A]] = {
-    //import c.mirror._
     import c.universe._
     val arr = arrayMacro(c)(as: _*)
     c.Expr[debox.Buffer[A]](q"debox.unsafe($arr)")
@@ -42,6 +41,9 @@ object Util {
    * Efficient alternative to Array.apply.
    *
    * "As seen on scala-internals!"
+   *
+   * NOTE: As of Scala 2.12 this seems unnecessary: Array(...) now
+   * uses a similar technique to produce efficient code.
    */
   def array[A](as: A*): Array[A] = macro arrayMacro[A]
 
@@ -60,9 +62,8 @@ object Util {
    *   }
    */
   def arrayMacro[A: c.WeakTypeTag](c: Context)(as: c.Expr[A]*): c.Expr[Array[A]] = {
-    //import c.mirror._
     import c.universe._
-  
+
     val n = as.length
     val tpe = implicitly[c.WeakTypeTag[A]].tpe
     val valdef = q"val arr = new Array[$tpe]($n)"
@@ -75,7 +76,7 @@ object Util {
 
   /**
    * Given a number n, this method returns n if n is a power-of-two.
-   * 
+   *
    * Otherwise, it returns the smallest power-of-two larger than n.
    */
   final def nextPowerOfTwo(n: Int): Int = {

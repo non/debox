@@ -5,71 +5,91 @@ import scala.util.Random._
 
 import spire.syntax.cfor._
 
-import com.google.caliper.Param
+import org.openjdk.jmh.annotations._
 
-object MapBenchmarks extends MyRunner(classOf[MapBenchmarks])
+object MapBenchmark {
 
-class MapBenchmarks extends MyBenchmark {
-  @Param(Array("4", "6", "8", "11", "14", "17", "20"))
-  var pow: Int = 0
+  @State(Scope.Benchmark)
+  class BenchmarkState {
 
-  var keys: Array[Int] = null
-  var vals: Array[Double] = null
-  var keys2: Array[Int] = null
+    @Param(Array("4", "6", "8", "11", "14", "17", "20"))
+    var pow: Int = 0
 
-  var scalaMap: mutable.Map[Int, Double] = null
-  var javaMap: java.util.HashMap[Int, Double] = null
-  var deboxMap: debox.Map[Int, Double] = null
+    var keys: Array[Int] = null
+    var vals: Array[Double] = null
+    var keys2: Array[Int] = null
 
-  override protected def setUp(): Unit = {
-    val n = scala.math.pow(2, pow.toDouble).toInt
+    var scalaMap: mutable.Map[Int, Double] = null
+    var javaMap: java.util.HashMap[Int, Double] = null
+    var deboxMap: debox.Map[Int, Double] = null
 
-    keys = init(n)(nextInt)
-    vals = init(n)(nextDouble)
-    keys2 = init(n)(nextInt)
+    @Setup(Level.Trial)
+    def setup(): Unit = {
+      val n = scala.math.pow(2, pow.toDouble).toInt
 
-    scalaMap = mutable.Map.empty[Int, Double]
-    javaMap = new java.util.HashMap[Int, Double]()
-    deboxMap = debox.Map.empty[Int, Double]
+      keys = init(n)(nextInt)
+      vals = init(n)(nextDouble)
+      keys2 = init(n)(nextInt)
 
-    cfor(0)(_ < keys.length, _ + 1) { i =>
-      scalaMap(keys(i)) = vals(i)
-      javaMap.put(keys(i), vals(i))
-      deboxMap(keys(i)) = vals(i)
+      scalaMap = mutable.Map.empty[Int, Double]
+      javaMap = new java.util.HashMap[Int, Double]()
+      deboxMap = debox.Map.empty[Int, Double]
+
+      cfor(0)(_ < keys.length, _ + 1) { i =>
+        scalaMap(keys(i)) = vals(i)
+        javaMap.put(keys(i), vals(i))
+        deboxMap(keys(i)) = vals(i)
+      }
     }
   }
+}
 
-  // building benchmark
-  def timeBuildScalaMap(reps: Int) = run(reps) {
+class MapBenchmark {
+
+  import MapBenchmark.BenchmarkState
+
+  @Benchmark
+  def buildScalaMap(st: BenchmarkState): mutable.Map[Int, Double] = {
+    val keys = st.keys
+    val vals = st.vals
     val m = mutable.Map.empty[Int, Double]
     cfor(0)(_ < keys.length, _ + 1) { i => m(keys(i)) = vals(i) }
-    m.size
+    m
   }
 
-  def timeBuildJavaMap(reps: Int) = run(reps) {
+  @Benchmark
+  def buildJavaMap(st: BenchmarkState): java.util.HashMap[Int, Double] = {
+    val keys = st.keys
+    val vals = st.vals
     val m = new java.util.HashMap[Int, Double]
     cfor(0)(_ < keys.length, _ + 1) { i => m.put(keys(i), vals(i)) }
-    m.size
+    m
   }
 
-  def timeBuildDeboxMap(reps: Int) = run(reps) {
+  @Benchmark
+  def buildDeboxMap(st: BenchmarkState): debox.Map[Int, Double] = {
+    val keys = st.keys
+    val vals = st.vals
     val m = debox.Map.empty[Int, Double]
     cfor(0)(_ < keys.length, _ + 1) { i => m(keys(i)) = vals(i) }
-    m.size
+    m
   }
-  
-  // foreach benchmark
-  def timeForeachScalaMap(reps: Int) = run(reps) {
+
+  @Benchmark
+  def foreachScalaMap(st: BenchmarkState): (Int, Double) = {
+    val scalaMap = st.scalaMap
     var ks = 0
     var vs = 0.0
-    scalaMap.foreach{ case (k, _) => ks += k * 3 }
-    scalaMap.foreach{ case (_, v) => vs += v * 3 }
-    scalaMap.foreach{ case (k, v) => { ks -= k; vs -= 2 * v } }
-    scalaMap.foreach{ case (k, v) => { ks -= 2 * k; vs -= v } }
+    scalaMap.foreach { case (k, _) => ks += k * 3 }
+    scalaMap.foreach { case (_, v) => vs += v * 3 }
+    scalaMap.foreach { case (k, v) => { ks -= k; vs -= 2 * v } }
+    scalaMap.foreach { case (k, v) => { ks -= 2 * k; vs -= v } }
     (ks, vs)
   }
 
-  def timeForeachJavaMap(reps: Int) = run(reps) {
+  @Benchmark
+  def foreachJavaMap(st: BenchmarkState): (Int, Double) = {
+    val javaMap = st.javaMap
     val es = javaMap.entrySet
     var ks = 0
     var vs = 0.0
@@ -84,7 +104,9 @@ class MapBenchmarks extends MyBenchmark {
     (ks, vs)
   }
 
-  def timeForeachDeboxMap(reps: Int) = run(reps) {
+  @Benchmark
+  def foreachDeboxMap(st: BenchmarkState): (Int, Double) = {
+    val deboxMap = st.deboxMap
     var ks = 0
     var vs = 0.0
     deboxMap.foreach((k,v) => ks += k * 3)
@@ -93,23 +115,34 @@ class MapBenchmarks extends MyBenchmark {
     deboxMap.foreach((k,v) => { ks -= 2 * k; vs -= v })
     (ks, vs)
   }
-  
-  // contains benchmark
-  def timeContainsScalaMap(reps: Int) = run(reps) {
+
+  @Benchmark
+  def containsScalaMap(st: BenchmarkState): Int = {
+    val keys = st.keys
+    val keys2 = st.keys2
+    val scalaMap = st.scalaMap
     var t = 0
     cfor(0)(_ < keys.length, _ + 1) { i => if (scalaMap.contains(keys(i))) t += 1 }
     cfor(0)(_ < keys2.length, _ + 1) { i => if (scalaMap.contains(keys2(i))) t += 1 }
     t
   }
 
-  def timeContainsJavaMap(reps: Int) = run(reps) {
+  @Benchmark
+  def containsJavaMap(st: BenchmarkState): Int = {
+    val keys = st.keys
+    val keys2 = st.keys2
+    val javaMap = st.javaMap
     var t = 0
     cfor(0)(_ < keys.length, _ + 1) { i => if (javaMap.containsKey(keys(i))) t += 1 }
     cfor(0)(_ < keys2.length, _ + 1) { i => if (javaMap.containsKey(keys2(i))) t += 1 }
     t
   }
 
-  def timeContainsDeboxMap(reps: Int) = run(reps) {
+  @Benchmark
+  def containsDeboxMap(st: BenchmarkState): Int = {
+    val keys = st.keys
+    val keys2 = st.keys2
+    val deboxMap = st.deboxMap
     var t = 0
     cfor(0)(_ < keys.length, _ + 1) { i => if (deboxMap.contains(keys(i))) t += 1 }
     cfor(0)(_ < keys2.length, _ + 1) { i => if (deboxMap.contains(keys2(i))) t += 1 }

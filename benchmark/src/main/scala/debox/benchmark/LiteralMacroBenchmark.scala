@@ -1,37 +1,53 @@
 package debox.benchmark
 
-//import com.google.caliper.Param
+import org.openjdk.jmh.annotations._
 
 import debox.Util.array
 
-object LiteralMacroBenchmarks extends MyRunner(classOf[LiteralMacroBenchmarks])
-class LiteralMacroBenchmarks extends MyBenchmark {
+class LiteralMacroBenchmark {
 
-  def timeApply0(reps:Int) = run(reps)(Array[Int]().length)
-  def timeMacro0(reps:Int) = run(reps)(array[Int]().length)
+  @Benchmark
+  def build000apply(): Array[Int] = Array[Int]()
+  @Benchmark
+  def build000macro(): Array[Int] = array[Int]()
 
-  def timeApply1(reps:Int) = run(reps)(Array(1).length)
-  def timeMacro1(reps:Int) = run(reps)(array(1).length)
+  @Benchmark
+  def build001apply(): Array[Int] = Array(1)
+  @Benchmark
+  def build001macro(): Array[Int] = array(1)
 
-  def timeApply2(reps:Int) = run(reps)(Array(1,2).length)
-  def timeMacro2(reps:Int) = run(reps)(array(1,2).length)
+  @Benchmark
+  def build002apply(): Array[Int] = Array(1,2)
+  @Benchmark
+  def build002macro(): Array[Int] = array(1,2)
 
-  def timeApply4(reps:Int) = run(reps)(Array(1,2,3,4).length)
-  def timeMacro4(reps:Int) = run(reps)(array(1,2,3,4).length)
+  @Benchmark
+  def build004apply(): Array[Int] = Array(1,2,3,4)
+  @Benchmark
+  def build004macro(): Array[Int] = array(1,2,3,4)
 
-  def timeApply8(reps:Int) = run(reps)(Array(1,2,3,4,5,6,7,8).length)
-  def timeMacro8(reps:Int) = run(reps)(array(1,2,3,4,5,6,7,8).length)
+  @Benchmark
+  def build008apply(): Array[Int] = Array(1,2,3,4,5,6,7,8)
+  @Benchmark
+  def build008macro(): Array[Int] = array(1,2,3,4,5,6,7,8)
 
-  def timeApply16(reps:Int) = run(reps)(Array(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16).length)
-  def timeMacro16(reps:Int) = run(reps)(array(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16).length)
+  @Benchmark
+  def build016apply(): Array[Int] = Array(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16)
+  @Benchmark
+  def build016macro(): Array[Int] = array(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16)
 
-  def timeApply32(reps:Int) = run(reps)(Array(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32).length)
-  def timeMacro32(reps:Int) = run(reps)(array(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32).length)
+  @Benchmark
+  def build032apply(): Array[Int] = Array(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32)
+  @Benchmark
+  def build032macro(): Array[Int] = array(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32)
 
-  def timeApply64(reps:Int) = run(reps)(Array(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64).length)
-  def timeMacro64(reps:Int) = run(reps)(array(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64).length)
+  @Benchmark
+  def build064apply(): Array[Int] = Array(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64)
+  @Benchmark
+  def build064macro(): Array[Int] = array(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64)
 
-  def timeApply128(reps:Int) = run(reps)(Array(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128).length)
-  def timeMacro128(reps:Int) = run(reps)(array(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128).length)
-  
+  @Benchmark
+  def build128apply(): Array[Int] = Array(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128)
+  @Benchmark
+  def build128macro(): Array[Int] = array(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128)
 }
