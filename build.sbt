@@ -1,5 +1,8 @@
 import ReleaseTransformations._
 
+// shadow sbt-scalajs' crossProject and CrossType until Scala.js 1.0.0 is released
+import sbtcrossproject.{crossProject, CrossType}
+
 lazy val scalac: Seq[String] = Seq(
     "-deprecation",                      // Emit warning and location for usages of deprecated APIs.
     "-encoding", "utf-8",                // Specify character encoding used by source files.
@@ -69,9 +72,9 @@ lazy val deboxSettings = Seq(
 
   resolvers += Resolver.sonatypeRepo("releases"),
   libraryDependencies ++= Seq(
-    "org.typelevel" %% "spire" % "0.14.1",
-    "org.scalatest" %% "scalatest" % "3.0.4" % "test",
-    "org.scalacheck" %% "scalacheck" % "1.13.5" % "test"
+    "org.typelevel" %%% "spire" % "0.14.1",
+    "org.scalatest" %%% "scalatest" % "3.0.4" % "test",
+    "org.scalacheck" %%% "scalacheck" % "1.13.5" % "test"
   ),
 
 
@@ -139,12 +142,16 @@ lazy val noPublishSettings = Seq(
   publishArtifact := false
 )
 
-lazy val core = project
+lazy val core = crossProject(JSPlatform, JVMPlatform)
   .in(file("."))
   .settings(moduleName := "debox")
   .settings(deboxSettings)
 
-lazy val benchmark = project.dependsOn(core)
+lazy val coreJvm = core.jvm
+lazy val coreJs = core.js
+
+lazy val benchmark = project
+  .dependsOn(coreJvm)
   .in(file("benchmark"))
   .settings(moduleName := "debox-benchmark")
   .settings(deboxSettings)
