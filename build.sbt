@@ -64,14 +64,14 @@ lazy val deboxSettings = Seq(
   licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
   homepage := Some(url("http://github.com/non/debox")),
 
-  scalaVersion := "2.12.4",
-  crossScalaVersions := Seq("2.11.11", "2.12.4"),
+  scalaVersion := "2.12.6",
+  crossScalaVersions := Seq("2.11.11", "2.12.6"),
 
   resolvers += Resolver.sonatypeRepo("releases"),
   libraryDependencies ++= Seq(
-    "org.typelevel" %% "spire" % "0.14.1",
-    "org.scalatest" %% "scalatest" % "3.0.4" % "test",
-    "org.scalacheck" %% "scalacheck" % "1.13.5" % "test"
+    "org.typelevel" %% "spire" % "0.16.0",
+    "org.scalatest" %% "scalatest" % "3.0.5" % "test",
+    "org.scalacheck" %% "scalacheck" % "1.14.0" % "test"
   ),
 
 
