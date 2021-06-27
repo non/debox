@@ -323,7 +323,7 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
     cfor(0)(_ < buckets.length, _ + 1) { i =>
       if (buckets(i) == 3) out.add(f(items(i)))
     }
-    if (out.size < len / 3) out.compact
+    if (out.size < len / 3) out.compact()
     out
   }
 
@@ -418,7 +418,7 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
         if (rhs.buckets(i) == 3) lhs += rhs.items(i)
       }
     } else {
-      val out = rhs.copy
+      val out = rhs.copy()
       out |= lhs
       lhs.absorb(out)
     }
@@ -438,11 +438,11 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
    */
   def |(rhs: Set[A]): Set[A] =
     if (lhs.size >= rhs.size) {
-      val out = lhs.copy
+      val out = lhs.copy()
       out |= rhs
       out
     } else {
-      val out = rhs.copy
+      val out = rhs.copy()
       out |= lhs
       out
     }
@@ -462,7 +462,7 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
         }
       }
     } else {
-      val out = rhs.copy
+      val out = rhs.copy()
       out &= lhs
       lhs.absorb(out)
     }
@@ -482,11 +482,11 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
    */
   def &(rhs: Set[A]): Set[A] =
     if (lhs.size <= rhs.size) {
-      val out = lhs.copy
+      val out = lhs.copy()
       out &= rhs
       out
     } else {
-      val out = rhs.copy
+      val out = rhs.copy()
       out &= lhs
       out
     }
@@ -546,7 +546,7 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
    * This is an O(n) operation, where n is the size of the set.
    */
   def --(rhs: Set[A]): Set[A] = {
-    val out = lhs.copy
+    val out = lhs.copy()
     out --= rhs
     out
   }
@@ -654,8 +654,8 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
         if (p(a)) yes += a else no += a
       }
     }
-    if (no.size < len / 6) no.compact
-    if (yes.size < len / 6) yes.compact
+    if (no.size < len / 6) no.compact()
+    if (yes.size < len / 6) yes.compact()
     (no, yes)
   }
 
@@ -678,7 +678,7 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
     new Iterator[A] {
       var index = i
       def hasNext: Boolean = index < buckets.length
-      def next: A = {
+      def next(): A = {
         val item = items(index)
         index += 1
         while (index < buckets.length && buckets(index) != 3) index += 1
@@ -709,7 +709,7 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
    *
    * This is an O(n) operation, where n is the size of the set.
    */
-  def toBuffer(): Buffer[A] = Buffer.fromArray(toArray)
+  def toBuffer(): Buffer[A] = Buffer.fromArray(toArray())
 
   /**
    * Copy the set's elements into a sorted buffer.
@@ -719,7 +719,7 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
    * This is an O(n) operation, where n is the size of the set.
    */
   def toSortedBuffer(implicit o: Order[A]): Buffer[A] = {
-    val buf = Buffer.fromArray(toArray)
+    val buf = Buffer.fromArray(toArray())
     buf.sort
     buf
   }
@@ -763,7 +763,7 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
   def toIterable(): Iterable[A] =
     new Iterable[A] {
       override def size: Int = lhs.size
-      def iterator: Iterator[A] = lhs.iterator
+      def iterator: Iterator[A] = lhs.iterator()
       override def foreach[U](f: A => U): Unit = lhs.foreach(a => f(a))
     }
 
@@ -776,7 +776,7 @@ final class Set[@sp (Short, Char, Int, Float, Long, Double, AnyRef) A] protected
    * This is an O(n) operation, where n is the size of the set.
    */
   def toScalaSet(): scala.collection.immutable.Set[A] =
-    iterator.toSet
+    iterator().toSet
 
 }
 

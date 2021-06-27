@@ -27,9 +27,9 @@ object MapBenchmark {
     def setup(): Unit = {
       val n = scala.math.pow(2, pow.toDouble).toInt
 
-      keys = init(n)(nextInt)
-      vals = init(n)(nextDouble)
-      keys2 = init(n)(nextInt)
+      keys = init(n)(nextInt())
+      vals = init(n)(nextDouble())
+      keys2 = init(n)(nextInt())
 
       scalaMap = mutable.Map.empty[Int, Double]
       javaMap = new java.util.HashMap[Int, Double]()
@@ -109,8 +109,8 @@ class MapBenchmark {
     val deboxMap = st.deboxMap
     var ks = 0
     var vs = 0.0
-    deboxMap.foreach((k,v) => ks += k * 3)
-    deboxMap.foreach((k,v) => vs += v * 3)
+    deboxMap.foreach((k,_) => ks += k * 3)
+    deboxMap.foreach((_,v) => vs += v * 3)
     deboxMap.foreach((k,v) => { ks -= k; vs -= 2 * v })
     deboxMap.foreach((k,v) => { ks -= 2 * k; vs -= v })
     (ks, vs)

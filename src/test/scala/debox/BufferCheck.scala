@@ -1,11 +1,10 @@
 package debox
 
-import org.scalatest._
-import prop._
+import org.scalatest.propspec._
 import org.scalacheck.Arbitrary._
 import org.scalacheck._
-import Gen._
-
+import org.scalatest.matchers.should.Matchers
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import spire.algebra.Order
 import spire.compat._
 import spire.std.any._
@@ -14,9 +13,9 @@ import scala.collection.mutable
 import scala.reflect._
 
 abstract class BufferCheck[A: Arbitrary: ClassTag: Order]
-    extends PropSpec with Matchers with GeneratorDrivenPropertyChecks {
+    extends AnyPropSpec with Matchers with ScalaCheckDrivenPropertyChecks {
 
-  def hybridEq(d: Buffer[A], s: IndexedSeq[A]): Boolean =
+  def hybridEq(d: Buffer[A], s: scala.collection.IndexedSeq[A]): Boolean =
     d.length == s.length && (0 until d.length).forall(i => d(i) == s(i))
 
   property("unsafe") {
@@ -73,12 +72,12 @@ abstract class BufferCheck[A: Arbitrary: ClassTag: Order]
   }
 
   property("copy") {
-    forAll { (xs: List[A], x: A) =>
+    forAll { (xs: List[A], _: A) =>
       val a = Buffer.fromIterable(xs)
-      val b = a.copy
+      val b = a.copy()
       a shouldBe b
       while (a.nonEmpty) {
-        a.pop
+        a.pop()
         a should not be b
       }
     }
@@ -87,7 +86,7 @@ abstract class BufferCheck[A: Arbitrary: ClassTag: Order]
   property("clear") {
     forAll { xs: List[A] =>
       val a = Buffer.fromIterable(xs)
-      a.clear
+      a.clear()
       a.isEmpty shouldBe true
       a.length shouldBe 0
       a shouldBe Buffer.empty[A]
@@ -98,7 +97,7 @@ abstract class BufferCheck[A: Arbitrary: ClassTag: Order]
     forAll { (xs: List[A], ys: List[A]) =>
       val buf = Buffer.fromIterable(xs)
       buf ++= ys
-      buf.compact
+      buf.compact()
       buf.elems.length shouldBe buf.length
     }
   }
@@ -120,7 +119,7 @@ abstract class BufferCheck[A: Arbitrary: ClassTag: Order]
       val buf = Buffer.fromIterable(xs)
       val control = mutable.ArrayBuffer(xs.toSeq: _*)
       xs.foreach { _ =>
-        buf.pop
+        buf.pop()
         control.remove(control.length - 1)
         hybridEq(buf, control) shouldBe true
       }
@@ -139,7 +138,7 @@ abstract class BufferCheck[A: Arbitrary: ClassTag: Order]
           lvl += 1
         case (_, false) =>
           if (lvl > 0) {
-            buf.pop
+            buf.pop()
             control.remove(control.length - 1)
             lvl -= 1
           }
@@ -192,25 +191,25 @@ abstract class BufferCheck[A: Arbitrary: ClassTag: Order]
 
   property("iterator") {
     forAll { xs: List[A] =>
-      Buffer.fromIterable(xs).iterator.toList shouldBe xs
+      Buffer.fromIterable(xs).iterator().toList shouldBe xs
     }
   }
 
   property("toIterable") {
     forAll { xs: List[A] =>
-      Buffer.fromIterable(xs).toIterable.toList shouldBe xs
+      Buffer.fromIterable(xs).toIterable().toList shouldBe xs
     }
   }
 
   property("toList") {
     forAll { xs: List[A] =>
-      Buffer.fromIterable(xs).toList shouldBe xs
+      Buffer.fromIterable(xs).toList() shouldBe xs
     }
   }
 
   property("toVector") {
     forAll { xs: List[A] =>
-      Buffer.fromIterable(xs).toVector shouldBe xs.toVector
+      Buffer.fromIterable(xs).toVector() shouldBe xs.toVector
     }
   }
 }

@@ -1,8 +1,9 @@
 package debox
 
-import org.scalatest._
-import prop._
+import org.scalatest.matchers.should.Matchers
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import org.scalacheck._
+import org.scalatest.propspec._
 
 import spire.algebra.Order
 import spire.std.any._
@@ -11,7 +12,7 @@ import scala.collection.mutable
 import scala.reflect._
 
 abstract class SetCheck[A: Arbitrary: ClassTag: Cogen: Order]
-    extends PropSpec with Matchers with GeneratorDrivenPropertyChecks {
+    extends AnyPropSpec with Matchers with ScalaCheckDrivenPropertyChecks {
 
   import scala.collection.immutable.Set
   import debox.{Set => DSet, Map => DMap}
@@ -49,7 +50,7 @@ abstract class SetCheck[A: Arbitrary: ClassTag: Cogen: Order]
   property("copy") {
     forAll { xs: List[A] =>
       val a = DSet.fromIterable(xs)
-      val b = a.copy
+      val b = a.copy()
       a shouldBe b
       xs.foreach { x =>
         a -= x
@@ -63,7 +64,7 @@ abstract class SetCheck[A: Arbitrary: ClassTag: Cogen: Order]
   property("clear") {
     forAll { xs: List[A] =>
       val a = DSet.fromIterable(xs)
-      a.clear
+      a.clear()
       a shouldBe DSet.empty[A]
     }
   }
@@ -164,7 +165,7 @@ abstract class SetCheck[A: Arbitrary: ClassTag: Cogen: Order]
     forAll { (xs: Set[A]) =>
       val a = DSet.fromIterable(xs)
       val b = DSet.empty[A]
-      a.iterator.foreach { x =>
+      a.iterator().foreach { x =>
         b(x) shouldBe false
         b += x
       }
@@ -225,7 +226,7 @@ abstract class SetCheck[A: Arbitrary: ClassTag: Cogen: Order]
   property("toBuffer") {
     forAll { (xs: Array[A]) =>
       val set1 = DSet.fromArray(xs)
-      val buf1 = set1.toBuffer
+      val buf1 = set1.toBuffer()
       val buf2 = Buffer.fromArray(xs)
       buf1.sort
       buf2.sort

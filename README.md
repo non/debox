@@ -9,7 +9,7 @@ collections framework (although conversions are possible). You may find
 that Debox's structures provide more reliable performance than Scala's
 mutable collections.
 
-Debox is available for Scala 2.11 and 2.12.
+Debox is available for Scala 2.11, 2.12, and 2.13.
 
 (For Scala 2.10, use Debox 0.7.3 or older.)
 
@@ -21,7 +21,7 @@ following snippet:
 ```
 resolvers += Resolver.sonatypeRepo("releases"),
 
-libraryDependencies += "org.spire-math" %% "debox" % "0.8.0"
+libraryDependencies += "org.spire-math" %% "debox" % "0.9.0"
 ```
 
 ### Debox Types

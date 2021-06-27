@@ -23,8 +23,11 @@ object BufferBenchmark {
     @Setup(Level.Trial)
     def setup(): Unit = {
       val n = scala.math.pow(2, pow.toDouble).toInt
-      data = init(n)(nextLong)
-      abuf = ArrayBuffer(data: _*)
+      data = init(n)(nextLong())
+      // abuf = ArrayBuffer(data: _*)
+      // The above was valid in 2.12, but 2.13 has breaking changes (https://docs.scala-lang.org/overviews/core/collections-migration-213.html)
+      // In 2.13 we have to pass an immutable Sequence, but the ArrayBuffer is still mutable, so the benchmarks are still valid
+      abuf = ArrayBuffer(data.toSeq: _*)
       sbuf = Buffer.fromArray(data)
     }
   }
@@ -61,7 +64,7 @@ class BufferBenchmark {
   @Benchmark
   def removeDeboxBuffer(st: BenchmarkState) = {
     val sbuf = st.sbuf
-    val bf = sbuf.copy
+    val bf = sbuf.copy()
     while (bf.nonEmpty) bf.remove(bf.length - 1)
     bf.length
   }
