@@ -1,19 +1,18 @@
 package debox
 
-import org.scalatest._
-import prop._
-
+import org.scalatest.matchers.should.Matchers
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import org.scalacheck._
+import org.scalatest.propspec._
 
 import scala.collection.mutable
 import scala.reflect._
-
 import spire.algebra.{CMonoid, Ring}
 import spire.std.any._
 import spire.syntax.monoid._
 
 abstract class MapCheck[A: Arbitrary: ClassTag: Cogen, B: Arbitrary: ClassTag: Cogen: CMonoid]
-    extends PropSpec with Matchers with GeneratorDrivenPropertyChecks {
+    extends AnyPropSpec with Matchers with ScalaCheckDrivenPropertyChecks {
 
   import scala.collection.immutable.Set
   import scala.collection.immutable.Map
@@ -62,7 +61,7 @@ abstract class MapCheck[A: Arbitrary: ClassTag: Cogen, B: Arbitrary: ClassTag: C
   property("copy") {
     forAll { kvs: List[(A, B)] =>
       val a = DMap.fromIterable(kvs)
-      val b = a.copy
+      val b = a.copy()
       a shouldBe b
       kvs.foreach { case (k, _) =>
         a.remove(k)
@@ -76,7 +75,7 @@ abstract class MapCheck[A: Arbitrary: ClassTag: Cogen, B: Arbitrary: ClassTag: C
   property("clear") {
     forAll { kvs: List[(A, B)] =>
       val a = DMap.fromIterable(kvs)
-      a.clear
+      a.clear()
       a shouldBe DMap.empty[A, B]
     }
   }
@@ -155,7 +154,7 @@ abstract class MapCheck[A: Arbitrary: ClassTag: Cogen, B: Arbitrary: ClassTag: C
     forAll { (kvs: Map[A, B]) =>
       val map1 = DMap.fromIterable(kvs)
       val map2 = DMap.empty[A, B]
-      map1.iterator.foreach { case (k, v) =>
+      map1.iterator().foreach { case (k, v) =>
         map2.contains(k) shouldBe false
         map2(k) = v
       }
@@ -166,7 +165,7 @@ abstract class MapCheck[A: Arbitrary: ClassTag: Cogen, B: Arbitrary: ClassTag: C
   property("mapToSet") {
     forAll { (kvs: Map[A, B], f: (A, B) => B) =>
       val m = DMap.fromIterable(kvs)
-      m.mapToSet((a, b) => b) shouldBe DSet.fromArray(m.valuesArray)
+      m.mapToSet((_, b) => b) shouldBe DSet.fromArray(m.valuesArray)
 
       val s2 = kvs.foldLeft(Set.empty[B]) { case (s, (a, b)) =>
         s + f(a, b)
@@ -187,7 +186,7 @@ abstract class MapCheck[A: Arbitrary: ClassTag: Cogen, B: Arbitrary: ClassTag: C
 
     forAll { (kvs: Map[A, B], f: (A, B) => (A, B)) =>
       val m = DMap.fromIterable(kvs)
-      m.mapToSet((a, b) => b) shouldBe DSet.fromArray(m.valuesArray)
+      m.mapToSet((_, b) => b) shouldBe DSet.fromArray(m.valuesArray)
 
       val kvs2 = kvs.foldLeft(Map.empty[A, B]) { case (m, (a, b)) =>
         val (aa, bb1) = f(a, b)

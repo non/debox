@@ -428,7 +428,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
    * maps.
    */
   final def ++(rhs: Map[A, B])(implicit ev: Monoid[B]): Map[A, B] = {
-    val out = lhs.copy
+    val out = lhs.copy()
     out ++= rhs
     out
   }
@@ -565,7 +565,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
     cfor(0)(_ < buckets.length, _ + 1) { i =>
       if (buckets(i) == 3) result += f(keys(i), vals(i))
     }
-    result.compact
+    result.compact()
     result
   }
 
@@ -587,7 +587,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
   final def mapItemsToMapUnsafe[@sp (Int, Long, AnyRef) C: ClassTag, @sp D: ClassTag](f: (A, B) => (C, D)): Map[C, D] = {
     val result = Map.ofSize[C, D](len)
     foreach((a, b) => result += f(a, b))
-    result.compact
+    result.compact()
     result
   }
 
@@ -614,7 +614,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
       val (c, d) = f(a, b)
       result(c) = result.getOrElse(c, z) |+| d
     }
-    result.compact
+    result.compact()
     result
   }
 
@@ -636,7 +636,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
   final def mapKeysUnsafe[@sp (Int, Long, AnyRef) C: ClassTag](f: A => C): Map[C, B] = {
     val result = Map.ofSize[C, B](len)
     foreach((a, b) => result(f(a)) = b)
-    result.compact
+    result.compact()
     result
   }
 
@@ -664,7 +664,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
       val c = f(a)
       result(c) = result.getOrElse(c, z) |+| b
     }
-    result.compact
+    result.compact()
     result
   }
 
@@ -894,7 +894,7 @@ final class Map[@sp(Int, Long, AnyRef) A, @sp B] protected[debox] (ks: Array[A],
     new Iterator[(A, B)] {
       var index = i
       def hasNext: Boolean = index < buckets.length
-      def next: (A, B) = {
+      def next(): (A, B) = {
         val key = keys(index)
         val value = vals(index)
         index += 1
@@ -982,7 +982,7 @@ object Map {
     val result = empty[A, B]
     // work around compiler bug with foreach here
     val it = pairs.iterator
-    while (it.hasNext) { result += it.next }
+    while (it.hasNext) { result += it.next() }
     result
   }
 

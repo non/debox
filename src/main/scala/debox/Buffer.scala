@@ -273,7 +273,7 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) e
    * input buffers.
    */
   def ++(buf: Buffer[A]): Buffer[A] = {
-    val result = this.copy; result ++= buf; result
+    val result = this.copy(); result ++= buf; result
   }
 
   /**
@@ -401,7 +401,7 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) e
       len = last
       a
     } else if (i == last) {
-      pop
+      pop()
     } else {
       throw new IndexOutOfBoundsException(i.toString)
     }
@@ -624,7 +624,10 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) e
    * toIterable.min.
    */
   def sort(implicit o: Order[A]): Unit =
-    QuickSort.qsort(elems, 0, len - 1)
+    // Spire's quicksort algorithm changed from version 0.14.1 (debox's original version): https://github.com/typelevel/spire/blob/v0.14.1/core/shared/src/main/scala/spire/math/Sorting.scala
+    // to version 0.17.0-M1 (debox's current version): https://github.com/typelevel/spire/blob/v0.17.0-M1/core/src/main/scala/spire/math/Sorting.scala
+    // The old version used length - 1 for the end variable, while the new version uses length
+    QuickSort.qsort(elems, 0, len)
 
   /**
    * Create an array out of the elements in the buffer.
@@ -655,7 +658,7 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) e
   def toIterable(): Iterable[A] =
     new Iterable[A] {
       override def size: Int = lhs.length
-      def iterator: Iterator[A] = lhs.iterator
+      def iterator: Iterator[A] = lhs.iterator()
       override def foreach[U](f: A => U): Unit = lhs.foreach(a => f(a))
     }
 
@@ -669,7 +672,7 @@ final class Buffer[@sp A](arr: Array[A], n: Int)(implicit val ct: ClassTag[A]) e
     val b = new VectorBuilder[A]
     b.sizeHint(len)
     cfor(0)(_ < len, _ + 1) { i => b += elems(i) }
-    b.result
+    b.result()
   }
 
   /**
@@ -789,13 +792,13 @@ object Buffer extends LowPriorityBufferImplicits {
       def empty: Buffer[A] = Buffer.empty[A]
       def combine(lhs: Buffer[A], rhs: Buffer[A]): Buffer[A] =
         if (lhs.length >= rhs.length) {
-          val out = lhs.copy
+          val out = lhs.copy()
           cfor(0)(_ < rhs.elems.length, _ + 1) { i =>
             out(i) = out(i) |+| rhs.elems(i)
           }
           out
         } else {
-          val out = rhs.copy
+          val out = rhs.copy()
           cfor(0)(_ < lhs.elems.length, _ + 1) { i =>
             out(i) = lhs.elems(i) |+| out(i)
           }

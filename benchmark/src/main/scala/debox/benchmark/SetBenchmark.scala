@@ -25,8 +25,8 @@ object SetBenchmark {
     @Setup(Level.Trial)
     def setup(): Unit = {
       val n = scala.math.pow(2, pow.toDouble).toInt
-      data = init(n)(nextLong).map(x => if (x == 0L) 1L else x)
-      data2 = init(n)(nextLong).map(x => if (x == 0L) 1L else x)
+      data = init(n)(nextLong()).map(x => if (x == 0L) 1L else x)
+      data2 = init(n)(nextLong()).map(x => if (x == 0L) 1L else x)
 
       scalaSet = mutable.Set.empty[Long]
       javaSet = new java.util.HashSet[Long]
@@ -99,7 +99,7 @@ class SetBenchmark {
   @Benchmark
   def unbuildDeboxSet(st: BenchmarkState) = {
     val data = st.data
-    val s = st.deboxSet.copy
+    val s = st.deboxSet.copy()
     cfor(0)(_ < data.length, _ + 1) { i => s -= data(i) }
     s.size
   }
